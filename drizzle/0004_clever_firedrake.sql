@@ -1,0 +1,1 @@
+ALTER TABLE `tokens` ADD `target` varchar(255);
