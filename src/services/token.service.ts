@@ -96,6 +96,10 @@ export const searchTokenByCondition = async (
     conditions.push(gt(tokens.expirationTime, filters.expirationTime));
   }
 
+  if (filters.target) {
+    conditions.push(eq(tokens.target, filters.target));
+  }
+
   if (conditions.length === 0) {
     let query = db.select().from(tokens).$dynamic();
 

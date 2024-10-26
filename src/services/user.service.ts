@@ -13,10 +13,6 @@ export const createUserDetail = async (payload: userDetailSchemaType) => {
 };
 
 // SELECT
-export const getUserByPhone = async (phone: string) => {
-  return db.select();
-};
-
 export const getUserDetailByEmail = async (email: string) => {
   return db.select().from(userDetail).where(eq(userDetail.email, email));
 };
@@ -43,6 +39,10 @@ export const getFullUserByConditions = async (
     .from(users)
     .innerJoin(userDetail, eq(users.id, userDetail.userId))
     .where(or(...conditions));
+};
+
+export const getUserById = async (userId: number) => {
+  return db.select().from(users).where(eq(users.id, userId)).limit(1);
 };
 
 // UPDATE
