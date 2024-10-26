@@ -10,4 +10,6 @@ router.post('/register', validationAsync(registerUserValidation), authController
 
 router.post('/login', validationAsync(loginUserValidation), authController.loginUser);
 
+router.post('/refresh', authController.refreshUserToken);
+
 export default router;
