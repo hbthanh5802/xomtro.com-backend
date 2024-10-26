@@ -20,4 +20,19 @@ export const loginUserValidation = z
       phone: phoneValidation
     })
   ])
-  .and(z.object({ password: passwordValidation }));
+  .and(z.object({ password: z.string().min(1, { message: 'Password is required!' }) }));
+
+export const changeUserPasswordValidation = z
+  .object({
+    oldPassword: z.string().trim().min(1, { message: 'Old password is required.' }),
+    newPassword: passwordValidation,
+    confirmNewPassword: passwordValidation
+  })
+  .refine((data) => data.newPassword === data.confirmNewPassword, {
+    message: 'Confirm password does not match!',
+    path: ['confirmPassword']
+  })
+  .refine((data) => data.oldPassword !== data.newPassword, {
+    message: 'New password must be different from your old password!',
+    path: ['newPassword']
+  });
