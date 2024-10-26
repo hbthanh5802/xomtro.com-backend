@@ -15,30 +15,37 @@ export type emailVerifyTokenType = {
   email: string;
 } & JwtPayload;
 
+export type tokenPayloadType = Record<string, any> & {
+  userId: number;
+  email: string;
+  tokenVersion: number;
+} & JwtPayload;
+
 export const generateVerifyEmailToken = (userId: number, email: string) => {
   const token = jwt.sign({ userId, email }, secretKey, {
-    // 5 minutes
-    expiresIn: 5 * 60
+    expiresIn: 5 * 60 // 5 minutes
   });
-
   return token;
 };
 
-export const verifyJwtToken = (token: string, type: 'access' | 'refresh' | 'secret') => {
+export const verifyJwtToken = (
+  token: string,
+  type: 'access' | 'refresh' | 'secret'
+): Promise<tokenPayloadType | emailVerifyTokenType> => {
   return new Promise((resolve, reject) => {
     const key = type === 'access' ? accessKey : type === 'refresh' ? refreshKey : secretKey;
     jwt.verify(token, key, (error, tokenPayload) => {
       if (error) {
         return reject(new ApiError(StatusCodes.UNAUTHORIZED, ReasonPhrases.UNAUTHORIZED));
       }
-      resolve(tokenPayload);
+
+      if (type === 'access' || type === 'refresh') {
+        resolve(tokenPayload as tokenPayloadType);
+      } else if (type === 'secret') {
+        resolve(tokenPayload as emailVerifyTokenType);
+      }
     });
   });
-};
-
-export type tokenPayloadType = Record<string, any> & {
-  userId: number;
-  tokenVersion: number;
 };
 
 export const generateAccessToken = (payload: tokenPayloadType, options?: jwt.SignOptions) => {
