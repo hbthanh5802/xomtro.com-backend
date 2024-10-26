@@ -12,4 +12,6 @@ router.post('/login', validationAsync(loginUserValidation), authController.login
 
 router.post('/refresh', authController.refreshUserToken);
 
+router.post('/logout', authMiddlewares.verifyUser, authController.logoutUser);
+
 export default router;

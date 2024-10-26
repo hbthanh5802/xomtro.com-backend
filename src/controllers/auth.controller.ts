@@ -1,5 +1,11 @@
 import { insertToken, removeTokenByCondition, removeTokenById, searchTokenByCondition } from '@/services/token.service';
-import { createUser, createUserDetail, getFullUserByConditions, getUserDetailByEmail } from '@/services/user.service';
+import {
+  createUser,
+  createUserDetail,
+  getFullUserByConditions,
+  getUserDetailByEmail,
+  updateUserById
+} from '@/services/user.service';
 import { userDetailSchemaType, userSchemaType } from '@/types/schema.type';
 import ApiError from '@/utils/ApiError.helper';
 import { ApiResponse } from '@/utils/ApiResponse.helper';
@@ -144,6 +150,18 @@ export const refreshUserToken = async (req: Request, res: Response, next: NextFu
 
     const responseData = { meta: { accessToken: newAccessToken, refresh: newRefreshToken } };
     return new ApiResponse(StatusCodes.OK, 'Refresh successfully!', responseData).send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const logoutUser = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { users, users_detail } = req.currentUser!;
+    await removeTokenByCondition({ userId: users.id, type: 'refresh', target: 'refresh' });
+    await updateUserById(users.id!, { tokenVersion: users.tokenVersion! + 1 });
+    res.clearCookie('refreshToken');
+    return new ApiResponse(StatusCodes.OK, 'Logout successfully!').send(res);
   } catch (error) {
     next(error);
   }

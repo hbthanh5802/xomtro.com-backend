@@ -22,7 +22,7 @@ export const verifyUser = async (req: Request, res: Response, next: NextFunction
     }
 
     if (existingUser.users.tokenVersion !== tokenVersion) {
-      return new ApiResponse(StatusCodes.FORBIDDEN, ReasonPhrases.FORBIDDEN).send(res);
+      return new ApiResponse(StatusCodes.UNAUTHORIZED, ReasonPhrases.UNAUTHORIZED).send(res);
     }
 
     req.currentUser = existingUser;
