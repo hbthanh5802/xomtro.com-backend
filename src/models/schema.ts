@@ -181,8 +181,11 @@ export const assets = mysqlTable('assets', {
   id: int().primaryKey().autoincrement(),
   type: mysqlEnum(['image', 'video']).notNull(),
   url: text().notNull(),
+  name: varchar({ length: 255 }).notNull(),
+  format: varchar({ length: 25 }),
+  tags: json(),
   folder: varchar({ length: 255 }),
-  ...timestamp
+  ...timestamps
 });
 
 export const properties = mysqlTable('properties', {
