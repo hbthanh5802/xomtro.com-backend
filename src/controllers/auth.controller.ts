@@ -1,13 +1,12 @@
+import { insertToken, removeTokenByCondition, removeTokenById, searchTokenByCondition } from '@/services/token.service';
 import { createUser, createUserDetail, getFullUserByConditions, getUserDetailByEmail } from '@/services/user.service';
 import { userDetailSchemaType, userSchemaType } from '@/types/schema.type';
 import ApiError from '@/utils/ApiError.helper';
 import { ApiResponse } from '@/utils/ApiResponse.helper';
 import { timeInVietNam } from '@/utils/time.helper';
 import {
-  emailVerifyTokenType,
   generateAccessToken,
   generateRefreshToken,
-  generateVerifyEmailToken,
   refreshExpirationTime,
   tokenPayloadType,
   verifyJwtToken
@@ -15,7 +14,6 @@ import {
 import bcrypt from 'bcrypt';
 import { NextFunction, Request, Response } from 'express';
 import { ReasonPhrases, StatusCodes } from 'http-status-codes';
-import { insertToken, removeTokenByCondition } from './../services/token.service';
 
 export const registerUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -91,6 +89,61 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
     };
 
     return new ApiResponse(StatusCodes.OK, 'Login successfully!', responseData).send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const refreshUserToken = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userRefreshToken = req.cookies.refreshToken;
+    if (!userRefreshToken) {
+      return new ApiResponse(StatusCodes.UNAUTHORIZED, ReasonPhrases.UNAUTHORIZED).send(res);
+    }
+
+    const tokenPayload = await verifyJwtToken(userRefreshToken, 'refresh');
+
+    const userTokenResult = await searchTokenByCondition({
+      value: userRefreshToken,
+      type: 'refresh',
+      target: 'refresh',
+      userId: tokenPayload.userId
+    });
+    const existingUserRefreshToken = userTokenResult[0];
+
+    if (!existingUserRefreshToken) {
+      return new ApiResponse(StatusCodes.UNAUTHORIZED, ReasonPhrases.UNAUTHORIZED).send(res);
+    }
+
+    await removeTokenById(existingUserRefreshToken.id);
+
+    const newTokenPayload: tokenPayloadType = {
+      userId: tokenPayload.userId,
+      email: tokenPayload.email,
+      tokenVersion: tokenPayload.tokenVersion
+    };
+
+    const newRefreshToken = generateRefreshToken(newTokenPayload);
+    const newAccessToken = generateAccessToken(newTokenPayload);
+
+    const expirationTime = timeInVietNam().add(refreshExpirationTime, 'second').toDate();
+
+    await insertToken({
+      userId: tokenPayload.userId,
+      value: newRefreshToken,
+      type: 'refresh',
+      target: 'refresh',
+      expirationTime: expirationTime
+    });
+
+    res.cookie('refreshToken', newRefreshToken, {
+      sameSite: 'strict',
+      secure: true,
+      httpOnly: true
+    });
+
+    const responseData = { meta: { accessToken: newAccessToken, refresh: newRefreshToken } };
+    return new ApiResponse(StatusCodes.OK, 'Refresh successfully!', responseData).send(res);
   } catch (error) {
     next(error);
   }
