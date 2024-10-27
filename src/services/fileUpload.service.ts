@@ -1,6 +1,6 @@
 import cloudinary from '@/configs/cloudinary.config';
 import ApiError from '@/utils/ApiError.helper';
-import { generateFileName } from '@/utils/file.helper';
+import { generateFileName, optimizeImage } from '@/utils/file.helper';
 import { UploadApiErrorResponse, UploadApiResponse } from 'cloudinary';
 import { StatusCodes } from 'http-status-codes';
 
@@ -34,10 +34,12 @@ export type uploadResponseType = {
 };
 
 export const uploadImage = (file: Express.Multer.File, options: uploadOptions): Promise<UploadApiResponse> => {
-  return new Promise<UploadApiResponse>((resolve, reject) => {
+  return new Promise<UploadApiResponse>(async (resolve, reject) => {
     const uniqueFileName = generateFileName(options.publicIdPrefix);
     const MAX_WIDTH = 1920;
     const MAX_HEIGHT = 1080;
+
+    const optimizedBuffer = await optimizeImage(file.buffer);
 
     const upload_stream = cloudinary.uploader.upload_stream(
       {
@@ -65,15 +67,17 @@ export const uploadImage = (file: Express.Multer.File, options: uploadOptions): 
       }
     );
 
-    upload_stream.end(file.buffer);
+    upload_stream.end(optimizedBuffer);
   });
 };
 
 export const uploadAvatar = (file: Express.Multer.File, options: uploadOptions) => {
-  return new Promise<UploadApiResponse>((resolve, reject) => {
+  return new Promise<UploadApiResponse>(async (resolve, reject) => {
     const uniqueFileName = generateFileName(options.publicIdPrefix);
     const MAX_WIDTH = 300;
     const MAX_HEIGHT = 300;
+
+    const optimizedBuffer = await optimizeImage(file.buffer);
 
     const upload_stream = cloudinary.uploader.upload_stream(
       {
@@ -102,7 +106,7 @@ export const uploadAvatar = (file: Express.Multer.File, options: uploadOptions) 
       }
     );
 
-    upload_stream.end(file.buffer);
+    upload_stream.end(optimizedBuffer);
   });
 };
 
