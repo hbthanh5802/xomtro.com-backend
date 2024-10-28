@@ -1,8 +1,9 @@
 import ApiError from '@/utils/ApiError.helper';
+import { NextFunction } from 'connect';
 import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 
-export const errorHandler = (error: ApiError, req: Request, res: Response) => {
+export const errorHandler = (error: ApiError, req: Request, res: Response, next: NextFunction) => {
   if (!error.statusCode) {
     error.statusCode = StatusCodes.INTERNAL_SERVER_ERROR;
   }
