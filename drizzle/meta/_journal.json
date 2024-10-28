@@ -50,6 +50,27 @@
       "when": 1729965943730,
       "tag": "0006_round_medusa",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1730025915100,
+      "tag": "0007_acoustic_stardust",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1730031359294,
+      "tag": "0008_big_mojo",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1730034156372,
+      "tag": "0009_lively_nekra",
+      "breakpoints": true
     }
   ]
 }

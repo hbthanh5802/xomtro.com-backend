@@ -29,81 +29,6 @@ export const users = mysqlTable('users', {
   ...timestamps
 });
 
-// export const provinces = mysqlTable(
-//   'provinces',
-//   {
-//     id: int().autoincrement().notNull(),
-//     code: varchar({ length: 25 }).notNull(),
-//     name: varchar({ length: 255 }).notNull(),
-//     type: int().notNull()
-//   },
-//   (table) => {
-//     return {
-//       code: index('code').on(table.code),
-//       idxProvincesName: index('idx_provinces_name').on(table.name),
-//       provincesId: primaryKey({ columns: [table.id], name: 'provinces_id' })
-//     };
-//   }
-// );
-
-// export const districts = mysqlTable(
-//   'districts',
-//   {
-//     id: int().autoincrement().notNull(),
-//     code: varchar({ length: 25 }).notNull(),
-//     name: varchar({ length: 255 }).notNull(),
-//     type: int().notNull(),
-//     provinceCode: varchar('province_code', { length: 25 }).references(() => provinces.code, {
-//       onDelete: 'set null',
-//       onUpdate: 'cascade'
-//     })
-//   },
-//   (table) => {
-//     return {
-//       code: index('code').on(table.code),
-//       idxDistrictsName: index('idx_districts_name').on(table.name),
-//       idxDistrictsProvinceCode: index('idx_districts_province_code').on(table.provinceCode),
-//       idxDistrictsProvinceCodeCode: index('idx_districts_province_code_code').on(table.provinceCode, table.code),
-//       idxDistrictsProvinceCodeName: index('idx_districts_province_code_name').on(table.provinceCode, table.name),
-//       provinceCode: index('province_code').on(table.provinceCode),
-//       districtsId: primaryKey({ columns: [table.id], name: 'districts_id' })
-//     };
-//   }
-// );
-
-// export const wards = mysqlTable(
-//   'wards',
-//   {
-//     id: int().autoincrement().notNull(),
-//     code: varchar({ length: 25 }).notNull(),
-//     name: varchar({ length: 255 }).notNull(),
-//     type: int().notNull(),
-//     districtCode: varchar('district_code', { length: 10 }).references(() => districts.code, {
-//       onDelete: 'set null',
-//       onUpdate: 'cascade'
-//     }),
-//     provinceCode: varchar('province_code', { length: 10 }).references(() => provinces.code, {
-//       onDelete: 'set null',
-//       onUpdate: 'cascade'
-//     })
-//   },
-//   (table) => {
-//     return {
-//       districtCode: index('district_code').on(table.districtCode),
-//       idxWardsDistrictCode: index('idx_wards_district_code').on(table.districtCode),
-//       idxWardsDistrictCodeName: index('idx_wards_district_code_name').on(table.districtCode, table.name),
-//       idxWardsName: index('idx_wards_name').on(table.name),
-//       idxWardsProvinceCode: index('idx_wards_province_code').on(table.provinceCode),
-//       idxWardsProvinceDistrictCode: index('idx_wards_province_district_code').on(
-//         table.provinceCode,
-//         table.districtCode
-//       ),
-//       provinceCode: index('province_code').on(table.provinceCode),
-//       wardsId: primaryKey({ columns: [table.id], name: 'wards_id' })
-//     };
-//   }
-// );
-
 export const userDetail = mysqlTable('users_detail', {
   userId: int('user_id')
     .primaryKey()
@@ -117,10 +42,6 @@ export const userDetail = mysqlTable('users_detail', {
   phone: varchar({ length: 25 }).notNull(),
   firstName: varchar('first_name', { length: 50 }).notNull(),
   lastName: varchar('last_name', { length: 50 }).notNull(),
-  addressId: int('address_id').references(() => addresses.id, {
-    onDelete: 'cascade',
-    onUpdate: 'cascade'
-  }),
   gender: mysqlEnum(['male', 'female', 'others']),
   dob: date(),
   isEmailVerified: boolean('is_email_verified').default(false),
@@ -134,9 +55,9 @@ export const addresses = mysqlTable(
   {
     id: int().primaryKey().autoincrement(),
     userId: int('user_id').references(() => users.id),
-    provinceName: int('province_name').notNull(),
-    districtName: int('district_name').notNull(),
-    wardName: int('ward_name').notNull(),
+    provinceName: varchar('province_name', { length: 255 }).notNull(),
+    districtName: varchar('district_name', { length: 255 }).notNull(),
+    wardName: varchar('ward_name', { length: 255 }).notNull(),
     detail: text(),
     postalCode: varchar('postal_code', { length: 25 }),
     latitude: decimal({ precision: 11, scale: 8 }),
@@ -212,10 +133,6 @@ export const posts = mysqlTable('posts', {
     onDelete: 'cascade',
     onUpdate: 'cascade'
   }),
-  addressId: int('address_id').references(() => addresses.id, {
-    onDelete: 'cascade',
-    onUpdate: 'cascade'
-  }),
   title: varchar({ length: 255 }).notNull(),
   description: text(),
   expiration_after: int('expiration_after'),
@@ -224,6 +141,12 @@ export const posts = mysqlTable('posts', {
   type: mysqlEnum(['rental', 'pass', 'join', 'wanted']).notNull(),
   note: text(),
   tagsList: json(),
+  addressProvince: varchar('address_province', { length: 255 }).notNull(),
+  addressDistrict: varchar('address_district', { length: 255 }).notNull(),
+  addressDetail: varchar('address_detail', { length: 255 }),
+  addressWard: varchar('address_ward', { length: 255 }).notNull(),
+  addressLongitude: decimal('address_longitude', { precision: 11, scale: 8 }),
+  addressLatitude: decimal('address_latitude', { precision: 10, scale: 8 }),
   ...timestamps
 });
 

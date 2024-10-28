@@ -119,3 +119,4 @@ export type userSchemaType = typeof schema.users.$inferInsert;
 export type userDetailSchemaType = typeof schema.userDetail.$inferInsert;
 export type tokenSchemaType = typeof schema.tokens.$inferInsert;
 export type assetSchemaType = typeof schema.assets.$inferInsert;
+export type addressSchemaType = typeof schema.addresses.$inferInsert;

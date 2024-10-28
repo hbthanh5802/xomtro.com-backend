@@ -1,8 +1,14 @@
+import {
+  deleteAddressByConditions,
+  deleteAddressById,
+  insertAddress,
+  updateAddressById
+} from '@/services/address.service';
 import { insertAsset, selectAssetById, updateAssetById } from '@/services/asset.service';
 import { deleteResource, uploadAvatar, uploadImage } from '@/services/fileUpload.service';
 import { searchTokenByCondition } from '@/services/token.service';
 import { getUserDetailByEmail, updateUserById, updateUserDetailById } from '@/services/user.service';
-import { assetSchemaType, assetType, tokenSchemaType } from '@/types/schema.type';
+import { addressSchemaType, assetSchemaType, assetType, tokenSchemaType } from '@/types/schema.type';
 import ApiError from '@/utils/ApiError.helper';
 import { ApiResponse } from '@/utils/ApiResponse.helper';
 import { generateVerifyEmailContent, sendEmail } from '@/utils/email.helper';
@@ -12,6 +18,7 @@ import bcrypt from 'bcrypt';
 import { UploadApiResponse } from 'cloudinary';
 import { NextFunction, Request, Response } from 'express';
 import { ReasonPhrases, StatusCodes } from 'http-status-codes';
+import { searchAddressByConditions } from '../services/address.service';
 import { insertToken, removeTokenByCondition } from './../services/token.service';
 
 export const getVerifyUserEmail = async (req: Request, res: Response, next: NextFunction) => {
@@ -154,6 +161,109 @@ export const updateUserAvatar = async (req: Request, res: Response, next: NextFu
     }
 
     return new ApiResponse(StatusCodes.OK, 'Avatar updated successfully!', uploadResult).send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const createUserAddress = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const currentUser = req.currentUser?.users;
+    const { provinceName, districtName, wardName, detail, postalCode, longitude, latitude } = req.body;
+
+    const insertAddressPayload: addressSchemaType = {
+      userId: currentUser?.id,
+      provinceName,
+      districtName,
+      wardName,
+      detail,
+      longitude,
+      latitude
+    };
+    const insertResult = await insertAddress(insertAddressPayload);
+    const justInsertedAddress = await searchAddressByConditions({
+      id: {
+        operator: 'eq',
+        value: insertResult[0].id
+      }
+    });
+
+    return new ApiResponse(StatusCodes.CREATED, ReasonPhrases.CREATED, justInsertedAddress).send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateUserAddress = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const currentUser = req.currentUser?.users;
+    const { addressId } = req.params;
+
+    if (!addressId) {
+      return new ApiResponse(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_GATEWAY).send(res);
+    }
+
+    const { provinceName, districtName, wardName, detail, postalCode, longitude, latitude } = req.body;
+    const addressPayload: addressSchemaType = {
+      provinceName,
+      districtName,
+      wardName,
+      detail,
+      longitude,
+      latitude
+    };
+    await updateAddressById(Number(addressId), addressPayload);
+    const getAddressResult = await searchAddressByConditions({
+      id: {
+        operator: 'eq',
+        value: Number(addressId)
+      }
+    });
+
+    return new ApiResponse(StatusCodes.CREATED, ReasonPhrases.CREATED, getAddressResult).send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const removeUserAddress = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const currentUser = req.currentUser?.users;
+    const { addressIds } = req.query;
+    if (!addressIds) {
+      return new ApiResponse(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST).send(res);
+    }
+
+    if (Array.isArray(addressIds)) {
+      await deleteAddressByConditions({
+        id: {
+          operator: 'in',
+          value: addressIds.map((value) => Number(value))
+        },
+        userId: {
+          operator: 'eq',
+          value: currentUser?.id
+        }
+      });
+    } else {
+      await deleteAddressById(Number(addressIds));
+    }
+
+    return new ApiResponse(StatusCodes.OK, 'Delete successfully!').send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getUserAddresses = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const currentUser = req.currentUser?.users;
+
+    const selectResult = await searchAddressByConditions({
+      userId: { operator: 'eq', value: currentUser?.id }
+    });
+
+    return new ApiResponse(StatusCodes.OK, ReasonPhrases.OK, selectResult).send(res);
   } catch (error) {
     next(error);
   }
