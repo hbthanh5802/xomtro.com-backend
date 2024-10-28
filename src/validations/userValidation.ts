@@ -1,5 +1,7 @@
+import { addresses } from '@/models/schema';
 import { userRole } from '@/types/schema.type';
 import { emailValidation, passwordValidation, phoneValidation } from '@/validations/commonValidation';
+import { createInsertSchema } from 'drizzle-zod';
 import { z } from 'zod';
 
 export const registerUserValidation = z.object({
@@ -36,3 +38,5 @@ export const changeUserPasswordValidation = z
     message: 'New password must be different from your old password!',
     path: ['newPassword']
   });
+
+export const addressValidation = createInsertSchema(addresses);
