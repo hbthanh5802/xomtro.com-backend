@@ -4,7 +4,7 @@ import {
   insertAddress,
   updateAddressById
 } from '@/services/address.service';
-import { insertAsset, selectAssetById, updateAssetById } from '@/services/asset.service';
+import { insertAsset, selectAssetById, selectAssetsByConditions, updateAssetById } from '@/services/asset.service';
 import { deleteResource, uploadAvatar, uploadImage } from '@/services/fileUpload.service';
 import { searchTokenByCondition } from '@/services/token.service';
 import { getUserDetailByEmail, updateUserById, updateUserDetailById } from '@/services/user.service';
@@ -21,6 +21,7 @@ import { ReasonPhrases, StatusCodes } from 'http-status-codes';
 import { searchAddressByConditions } from '../services/address.service';
 import { insertToken, removeTokenByCondition } from './../services/token.service';
 
+// Get verify user email token
 export const getVerifyUserEmail = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const email = req.query.email as string;
@@ -63,6 +64,7 @@ export const getVerifyUserEmail = async (req: Request, res: Response, next: Next
   }
 };
 
+// Verify user email token
 export const verifyUserEmail = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, token } = req.body;
@@ -95,6 +97,7 @@ export const verifyUserEmail = async (req: Request, res: Response, next: NextFun
   }
 };
 
+// Change user password
 export const changeUserPassword = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const currentUser = req.currentUser!;
@@ -115,6 +118,27 @@ export const changeUserPassword = async (req: Request, res: Response, next: Next
   }
 };
 
+// Get user avatar
+export const getUserAvatar = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const currentUser = req.currentUser;
+    const { users_detail } = currentUser!;
+
+    if (!users_detail.avatarAssetId) {
+      return new ApiResponse(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND).send(res);
+    }
+
+    const selectAvatarResult = await selectAssetById(users_detail.avatarAssetId);
+    if (!selectAvatarResult.length) {
+      return new ApiResponse(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND).send(res);
+    }
+
+    return new ApiResponse(StatusCodes.OK, ReasonPhrases.OK, selectAvatarResult[0]).send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Update user avatar
 const updateExistingAvatar = async (assetId: number, uploadResult: UploadApiResponse) => {
   const selectAssetResult = await selectAssetById(assetId);
@@ -125,14 +149,15 @@ const updateExistingAvatar = async (assetId: number, uploadResult: UploadApiResp
   });
 };
 
-const createNewAvatarAsset = async (uploadResult: UploadApiResponse) => {
+const createNewAvatarAsset = async (userId: number, uploadResult: UploadApiResponse) => {
   const insertAssetPayload: assetSchemaType = {
     name: uploadResult.public_id,
     folder: 'avatars',
     type: 'image',
     url: uploadResult.url,
     tags: JSON.stringify(['avatar']),
-    format: uploadResult.format
+    format: uploadResult.forma,
+    userId
   };
   const insertResult = await insertAsset(insertAssetPayload);
   return insertResult[0].id;
@@ -156,11 +181,26 @@ export const updateUserAvatar = async (req: Request, res: Response, next: NextFu
       await updateExistingAvatar(avatarAssetId, uploadResult);
       await updateUserDetailById(userId, { avatarAssetId });
     } else {
-      const newAssetId = await createNewAvatarAsset(uploadResult);
+      const newAssetId = await createNewAvatarAsset(userId, uploadResult);
       await updateUserDetailById(userId, { avatarAssetId: newAssetId });
     }
 
-    return new ApiResponse(StatusCodes.OK, 'Avatar updated successfully!', uploadResult).send(res);
+    const selectAvatarResult = await selectAssetsByConditions({
+      userId: {
+        operator: 'eq',
+        value: userId
+      },
+      type: {
+        operator: 'eq',
+        value: 'image'
+      },
+      folder: {
+        operator: 'eq',
+        value: 'avatars'
+      }
+    });
+
+    return new ApiResponse(StatusCodes.OK, 'Avatar updated successfully!', selectAvatarResult[0]).send(res);
   } catch (error) {
     next(error);
   }

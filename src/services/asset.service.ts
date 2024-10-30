@@ -23,7 +23,7 @@ export const selectAssetById = async (assetId: number) => {
 
 export const selectAssetsByConditions = async <T extends assetSchemaType>(
   conditions: ConditionsType<T>,
-  options: queryOptions<T>
+  options?: queryOptions<T>
 ) => {
   const whereClause = Object.entries(conditions).map(([field, condition]) => {
     return processCondition(field as keyof T, condition as Condition<T, keyof T>, assets as any);
