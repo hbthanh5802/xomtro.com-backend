@@ -1,4 +1,5 @@
 import { env } from '@/configs/env.config';
+import googleClient from '@/configs/google.config';
 import ApiError from '@/utils/ApiError.helper';
 import { ReasonPhrases, StatusCodes } from 'http-status-codes';
 import jwt, { JwtPayload } from 'jsonwebtoken';
@@ -60,4 +61,19 @@ export const generateRefreshToken = (payload: tokenPayloadType, options?: jwt.Si
     expiresIn: refreshExpirationTime,
     ...(options && { ...options })
   });
+};
+
+export const verifyGoogleToken = async (token: string) => {
+  try {
+    const ticket = await googleClient.verifyIdToken({
+      idToken: token,
+      audience: env.GOOGLE_CLIENT_ID
+    });
+
+    const tokenPayload = ticket.getPayload();
+
+    return tokenPayload;
+  } catch (error) {
+    throw error;
+  }
 };
