@@ -39,4 +39,8 @@ export const changeUserPasswordValidation = z
     path: ['newPassword']
   });
 
+export const oAuthValidation = z.object({
+  credential: z.string().trim().min(1, { message: 'Credential is required!' })
+});
+
 export const addressValidation = createInsertSchema(addresses);

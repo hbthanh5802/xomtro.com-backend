@@ -1,24 +1,32 @@
+import axiosRequest from '@/configs/axiosClient.config';
+import googleClient from '@/configs/google.config';
+import { insertAsset } from '@/services/asset.service';
+import { uploadImageFromUrl } from '@/services/fileUpload.service';
 import { insertToken, removeTokenByCondition, removeTokenById, searchTokenByCondition } from '@/services/token.service';
 import {
-  createUser,
-  createUserDetail,
   getFullUserByConditions,
   getUserDetailByEmail,
+  insertUser,
+  insertUserDetail,
   updateUserById
 } from '@/services/user.service';
-import { userDetailSchemaType, userSchemaType } from '@/types/schema.type';
+import { googleUserInfoResponseType } from '@/types/oauth.type';
+import { assetSchemaType, userDetailSchemaType, userSchemaType } from '@/types/schema.type';
 import ApiError from '@/utils/ApiError.helper';
 import { ApiResponse } from '@/utils/ApiResponse.helper';
+import { generateFileName } from '@/utils/file.helper';
 import { timeInVietNam } from '@/utils/time.helper';
 import {
   generateAccessToken,
   generateRefreshToken,
   refreshExpirationTime,
   tokenPayloadType,
+  verifyGoogleToken,
   verifyJwtToken
 } from '@/utils/token.helper';
 import bcrypt from 'bcrypt';
 import { NextFunction, Request, Response } from 'express';
+import { google } from 'googleapis';
 import { ReasonPhrases, StatusCodes } from 'http-status-codes';
 
 export const registerUser = async (req: Request, res: Response, next: NextFunction) => {
@@ -31,7 +39,7 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
     const hashedPassword = await bcrypt.hash(password, 10);
     //
     const userPayload: userSchemaType = { password: hashedPassword };
-    const userResult = await createUser(userPayload);
+    const userResult = await insertUser(userPayload);
     //
     const userDetailPayload: userDetailSchemaType = {
       role,
@@ -41,7 +49,7 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
       email,
       phone
     };
-    const userDetailResult = await createUserDetail(userDetailPayload);
+    const userDetailResult = await insertUserDetail(userDetailPayload);
     return new ApiResponse(StatusCodes.CREATED, 'Register successfully!', userDetailResult).send(res);
   } catch (error) {
     next(error);
@@ -162,6 +170,108 @@ export const logoutUser = async (req: Request, res: Response, next: NextFunction
     await updateUserById(users.id!, { tokenVersion: users.tokenVersion! + 1 });
     res.clearCookie('refreshToken');
     return new ApiResponse(StatusCodes.OK, 'Logout successfully!').send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const googleAuth = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { credential } = req.body;
+    if (!credential) {
+      throw new ApiError(StatusCodes.UNAUTHORIZED, ReasonPhrases.UNAUTHORIZED);
+    }
+
+    const userInfoResponse = await axiosRequest<googleUserInfoResponseType>({
+      method: 'GET',
+      url: 'https://www.googleapis.com/oauth2/v3/userinfo',
+      headers: { Authorization: `Bearer ${credential}` }
+    });
+
+    const { email, email_verified, given_name, family_name, picture } = userInfoResponse;
+
+    // Check existing user in database
+    const existingUser = await getUserDetailByEmail(email);
+    if (!existingUser.length) {
+      // Create a new user
+      const defaultUserPassword = given_name.toLowerCase() + '@123456@password';
+      const hashedPassword = await bcrypt.hash(defaultUserPassword, 10);
+      const userPayload: userSchemaType = {
+        password: hashedPassword,
+        provider: 'google',
+        status: 'actived'
+      };
+      const insertUserResult = await insertUser(userPayload);
+      const { id: userId } = insertUserResult[0]!;
+
+      // Upload user avatar
+      const uniqueFileName = generateFileName();
+      const uploadAvatarResponse = await uploadImageFromUrl(picture, {
+        folder: 'avatars',
+        publicIdPrefix: uniqueFileName
+      });
+      const insertAvatarPayload: assetSchemaType = {
+        type: 'image',
+        url: uploadAvatarResponse.url,
+        name: uploadAvatarResponse.public_id,
+        tags: JSON.stringify(['avatar']),
+        folder: 'avatars',
+        format: uploadAvatarResponse.format,
+        userId: userId
+      };
+      const insertAvatarResult = await insertAsset(insertAvatarPayload);
+
+      // Create user detail
+      const userDetailPayload: userDetailSchemaType = {
+        userId,
+        email: email!,
+        isEmailVerified: !!email_verified,
+        firstName: family_name!,
+        lastName: given_name!,
+        avatarAssetId: insertAvatarResult[0].id,
+        phone: ''
+      };
+      await insertUserDetail(userDetailPayload);
+    }
+
+    const fullUserResult = await getFullUserByConditions({ email: email });
+    if (!fullUserResult.length) {
+      throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Some thing went wrong!');
+    }
+    const { users, users_detail } = fullUserResult[0];
+
+    const tokenPayload: tokenPayloadType = {
+      userId: users.id,
+      email: users_detail.email,
+      tokenVersion: users.tokenVersion
+    };
+
+    const accessToken = generateAccessToken(tokenPayload);
+    const refreshToken = generateRefreshToken(tokenPayload);
+
+    await removeTokenByCondition({ userId: users.id, type: 'refresh', target: 'refresh' });
+    await insertToken({
+      value: refreshToken,
+      userId: users.id,
+      expirationTime: timeInVietNam().add(refreshExpirationTime, 'second').toDate(),
+      type: 'refresh',
+      target: 'refresh'
+    });
+
+    res.cookie('refreshToken', refreshToken, {
+      secure: true,
+      httpOnly: true,
+      sameSite: 'strict'
+    });
+
+    const responseData = {
+      userDetail: users_detail,
+      meta: { accessToken, refreshToken }
+    };
+
+    const statusCode = !!existingUser.length ? StatusCodes.OK : StatusCodes.CREATED;
+
+    return new ApiResponse(statusCode, StatusCodes[statusCode], responseData).send(res);
   } catch (error) {
     next(error);
   }
