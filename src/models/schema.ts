@@ -36,7 +36,7 @@ export const userDetail = mysqlTable('users_detail', {
       onDelete: 'cascade',
       onUpdate: 'cascade'
     }),
-  role: mysqlEnum(['renter', 'landlord']).notNull(),
+  role: mysqlEnum(['renter', 'landlord']),
   email: varchar({ length: 255 }).notNull(),
   bio: text(),
   phone: varchar({ length: 25 }).notNull(),
@@ -98,16 +98,31 @@ export const tokens = mysqlTable(
   })
 );
 
-export const assets = mysqlTable('assets', {
-  id: int().primaryKey().autoincrement(),
-  type: mysqlEnum(['image', 'video']).notNull(),
-  url: text().notNull(),
-  name: varchar({ length: 255 }).notNull(),
-  format: varchar({ length: 25 }),
-  tags: json(),
-  folder: varchar({ length: 255 }),
-  ...timestamps
-});
+export const assets = mysqlTable(
+  'assets',
+  {
+    id: int().primaryKey().autoincrement(),
+    type: mysqlEnum(['image', 'video']).notNull(),
+    url: text().notNull(),
+    name: varchar({ length: 255 }).notNull(),
+    format: varchar({ length: 25 }),
+    tags: json(),
+    folder: varchar({ length: 255 }),
+    userId: int('user_id').references(() => users.id, {
+      onDelete: 'cascade',
+      onUpdate: 'cascade'
+    }),
+    postId: int('post_id').references(() => posts.id, {
+      onDelete: 'cascade',
+      onUpdate: 'cascade'
+    }),
+    ...timestamps
+  },
+  (table) => ({
+    idxPostId: index('idx_assets_post_id').on(table.postId),
+    idxUserIdPostId: index('idx_assets_user_id_post_id').on(table.userId, table.postId)
+  })
+);
 
 export const properties = mysqlTable('properties', {
   id: int().primaryKey().autoincrement(),
@@ -149,6 +164,27 @@ export const posts = mysqlTable('posts', {
   addressLatitude: decimal('address_latitude', { precision: 10, scale: 8 }),
   ...timestamps
 });
+
+export const postAssets = mysqlTable(
+  'post_assets',
+  {
+    postId: int('post_id').references(() => posts.id, {
+      onDelete: 'cascade',
+      onUpdate: 'cascade'
+    }),
+    assetId: int('asset_id').references(() => assets.id, {
+      onDelete: 'cascade',
+      onUpdate: 'cascade'
+    }),
+    ...timestamps
+  },
+  (table) => ({
+    pkPostIdAssetId: primaryKey({
+      name: 'pk_post_id_asset_id',
+      columns: [table.postId, table.assetId]
+    })
+  })
+);
 
 export const rentalPosts = mysqlTable('rental_posts', {
   id: int('post_id')

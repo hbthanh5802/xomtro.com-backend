@@ -4,11 +4,11 @@ import { userDetailSchemaType, userSchemaType } from '@/types/schema.type';
 import { eq, or } from 'drizzle-orm';
 
 // INSERT
-export const createUser = async (payload: userSchemaType) => {
+export const insertUser = async (payload: userSchemaType) => {
   return db.insert(users).values(payload).$returningId();
 };
 
-export const createUserDetail = async (payload: userDetailSchemaType) => {
+export const insertUserDetail = async (payload: userDetailSchemaType) => {
   return db.insert(userDetail).values(payload).$returningId();
 };
 
