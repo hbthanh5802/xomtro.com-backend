@@ -26,7 +26,6 @@ import {
 } from '@/utils/token.helper';
 import bcrypt from 'bcrypt';
 import { NextFunction, Request, Response } from 'express';
-import { google } from 'googleapis';
 import { ReasonPhrases, StatusCodes } from 'http-status-codes';
 
 export const registerUser = async (req: Request, res: Response, next: NextFunction) => {
@@ -56,6 +55,27 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
   }
 };
 
+const handleUserTokenProcess = async (tokenPayload: tokenPayloadType) => {
+  try {
+    const { userId, email, tokenVersion } = tokenPayload;
+    const accessToken = generateAccessToken(tokenPayload);
+    const refreshToken = generateRefreshToken(tokenPayload);
+
+    await removeTokenByCondition({ userId: userId, type: 'refresh', target: 'refresh' });
+    await insertToken({
+      value: refreshToken,
+      userId: userId,
+      expirationTime: timeInVietNam().add(refreshExpirationTime, 'second').toDate(),
+      type: 'refresh',
+      target: 'refresh'
+    });
+
+    return { accessToken, refreshToken };
+  } catch (error) {
+    throw error;
+  }
+};
+
 export const loginUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, phone, password } = req.body;
@@ -79,17 +99,7 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
       tokenVersion: users.tokenVersion
     };
 
-    const accessToken = generateAccessToken(tokenPayload);
-    const refreshToken = generateRefreshToken(tokenPayload);
-
-    await removeTokenByCondition({ userId: users.id, type: 'refresh', target: 'refresh' });
-    await insertToken({
-      value: refreshToken,
-      userId: users.id,
-      expirationTime: timeInVietNam().add(refreshExpirationTime, 'second').toDate(),
-      type: 'refresh',
-      target: 'refresh'
-    });
+    const { accessToken, refreshToken } = await handleUserTokenProcess(tokenPayload);
 
     res.cookie('refreshToken', refreshToken, {
       secure: true,
@@ -137,18 +147,8 @@ export const refreshUserToken = async (req: Request, res: Response, next: NextFu
       tokenVersion: tokenPayload.tokenVersion
     };
 
-    const newRefreshToken = generateRefreshToken(newTokenPayload);
-    const newAccessToken = generateAccessToken(newTokenPayload);
-
-    const expirationTime = timeInVietNam().add(refreshExpirationTime, 'second').toDate();
-
-    await insertToken({
-      userId: tokenPayload.userId,
-      value: newRefreshToken,
-      type: 'refresh',
-      target: 'refresh',
-      expirationTime: expirationTime
-    });
+    const { accessToken: newRefreshToken, refreshToken: newAccessToken } =
+      await handleUserTokenProcess(newTokenPayload);
 
     res.cookie('refreshToken', newRefreshToken, {
       sameSite: 'strict',
@@ -188,7 +188,7 @@ export const googleAuth = async (req: Request, res: Response, next: NextFunction
       headers: { Authorization: `Bearer ${credential}` }
     });
 
-    const { email, email_verified, given_name, family_name, picture } = userInfoResponse;
+    const { email, email_verified, given_name, family_name, picture, sub } = userInfoResponse;
 
     // Check existing user in database
     const existingUser = await getUserDetailByEmail(email);
@@ -199,7 +199,8 @@ export const googleAuth = async (req: Request, res: Response, next: NextFunction
       const userPayload: userSchemaType = {
         password: hashedPassword,
         provider: 'google',
-        status: 'actived'
+        status: 'actived',
+        googleId: sub
       };
       const insertUserResult = await insertUser(userPayload);
       const { id: userId } = insertUserResult[0]!;
@@ -246,17 +247,7 @@ export const googleAuth = async (req: Request, res: Response, next: NextFunction
       tokenVersion: users.tokenVersion
     };
 
-    const accessToken = generateAccessToken(tokenPayload);
-    const refreshToken = generateRefreshToken(tokenPayload);
-
-    await removeTokenByCondition({ userId: users.id, type: 'refresh', target: 'refresh' });
-    await insertToken({
-      value: refreshToken,
-      userId: users.id,
-      expirationTime: timeInVietNam().add(refreshExpirationTime, 'second').toDate(),
-      type: 'refresh',
-      target: 'refresh'
-    });
+    const { accessToken, refreshToken } = await handleUserTokenProcess(tokenPayload);
 
     res.cookie('refreshToken', refreshToken, {
       secure: true,

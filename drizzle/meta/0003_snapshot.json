@@ -1,8 +1,8 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "d7e23aec-649e-4a7b-bbbd-f89471a77729",
-  "prevId": "aeaecfbe-e6c3-4eb4-a3d1-325cd46df897",
+  "id": "a18054d9-2aad-40ba-9fb1-e71711e79d08",
+  "prevId": "ac63a92a-29d2-469b-8fdf-3f6604072b02",
   "tables": {
     "addresses": {
       "name": "addresses",
@@ -23,21 +23,21 @@
         },
         "province_name": {
           "name": "province_name",
-          "type": "int",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "district_name": {
           "name": "district_name",
-          "type": "int",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "ward_name": {
           "name": "ward_name",
-          "type": "int",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
@@ -163,16 +163,111 @@
           "notNull": true,
           "autoincrement": false
         },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "format": {
+          "name": "format",
+          "type": "varchar(25)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "tags": {
+          "name": "tags",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "folder": {
           "name": "folder",
           "type": "varchar(255)",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "post_id": {
+          "name": "post_id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "(now())"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "onUpdate": true,
+          "default": "(now())"
         }
       },
-      "indexes": {},
-      "foreignKeys": {},
+      "indexes": {
+        "idx_assets_post_id": {
+          "name": "idx_assets_post_id",
+          "columns": [
+            "post_id"
+          ],
+          "isUnique": false
+        },
+        "idx_assets_user_id_post_id": {
+          "name": "idx_assets_user_id_post_id",
+          "columns": [
+            "user_id",
+            "post_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "assets_user_id_users_id_fk": {
+          "name": "assets_user_id_users_id_fk",
+          "tableFrom": "assets",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "assets_post_id_posts_id_fk": {
+          "name": "assets_post_id_posts_id_fk",
+          "tableFrom": "assets",
+          "tableTo": "posts",
+          "columnsFrom": [
+            "post_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
       "compositePrimaryKeys": {
         "assets_id": {
           "name": "assets_id",
@@ -724,6 +819,82 @@
       "uniqueConstraints": {},
       "checkConstraint": {}
     },
+    "post_assets": {
+      "name": "post_assets",
+      "columns": {
+        "post_id": {
+          "name": "post_id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "asset_id": {
+          "name": "asset_id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "(now())"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "onUpdate": true,
+          "default": "(now())"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "post_assets_post_id_posts_id_fk": {
+          "name": "post_assets_post_id_posts_id_fk",
+          "tableFrom": "post_assets",
+          "tableTo": "posts",
+          "columnsFrom": [
+            "post_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "post_assets_asset_id_assets_id_fk": {
+          "name": "post_assets_asset_id_assets_id_fk",
+          "tableFrom": "post_assets",
+          "tableTo": "assets",
+          "columnsFrom": [
+            "asset_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "pk_post_id_asset_id": {
+          "name": "pk_post_id_asset_id",
+          "columns": [
+            "post_id",
+            "asset_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
     "post_comment_closures": {
       "name": "post_comment_closures",
       "columns": {
@@ -955,13 +1126,6 @@
           "notNull": false,
           "autoincrement": false
         },
-        "address_id": {
-          "name": "address_id",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
         "title": {
           "name": "title",
           "type": "varchar(255)",
@@ -1020,6 +1184,48 @@
           "notNull": false,
           "autoincrement": false
         },
+        "address_province": {
+          "name": "address_province",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "address_district": {
+          "name": "address_district",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "address_detail": {
+          "name": "address_detail",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "address_ward": {
+          "name": "address_ward",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "address_longitude": {
+          "name": "address_longitude",
+          "type": "decimal(11,8)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "address_latitude": {
+          "name": "address_latitude",
+          "type": "decimal(10,8)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -1046,19 +1252,6 @@
           "tableTo": "users",
           "columnsFrom": [
             "owner_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "cascade"
-        },
-        "posts_address_id_addresses_id_fk": {
-          "name": "posts_address_id_addresses_id_fk",
-          "tableFrom": "posts",
-          "tableTo": "addresses",
-          "columnsFrom": [
-            "address_id"
           ],
           "columnsTo": [
             "id"
@@ -1318,6 +1511,13 @@
           "notNull": false,
           "autoincrement": false
         },
+        "target": {
+          "name": "target",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -1393,7 +1593,7 @@
           "name": "role",
           "type": "enum('renter','landlord')",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
         "email": {
@@ -1429,13 +1629,6 @@
           "type": "varchar(50)",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false
-        },
-        "address_id": {
-          "name": "address_id",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": false,
           "autoincrement": false
         },
         "gender": {
@@ -1508,19 +1701,6 @@
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
-        "users_detail_address_id_addresses_id_fk": {
-          "name": "users_detail_address_id_addresses_id_fk",
-          "tableFrom": "users_detail",
-          "tableTo": "addresses",
-          "columnsFrom": [
-            "address_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "cascade"
-        },
         "users_detail_avatar_asset_id_assets_id_fk": {
           "name": "users_detail_avatar_asset_id_assets_id_fk",
           "tableFrom": "users_detail",
@@ -1543,7 +1723,14 @@
           ]
         }
       },
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "users_detail_email_unique": {
+          "name": "users_detail_email_unique",
+          "columns": [
+            "email"
+          ]
+        }
+      },
       "checkConstraint": {}
     },
     "user_post_reactions": {
@@ -1670,6 +1857,13 @@
           "autoincrement": false,
           "default": "'unactived'"
         },
+        "google_id": {
+          "name": "google_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "token_version": {
           "name": "token_version",
           "type": "int",
@@ -1706,7 +1900,14 @@
           ]
         }
       },
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "users_google_id_unique": {
+          "name": "users_google_id_unique",
+          "columns": [
+            "google_id"
+          ]
+        }
+      },
       "checkConstraint": {}
     },
     "wanted_posts": {
