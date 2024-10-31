@@ -1,15 +1,15 @@
 CREATE TABLE `addresses` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`user_id` int,
-	`province_name` int NOT NULL,
-	`district_name` int NOT NULL,
-	`ward_name` int NOT NULL,
+	`province_name` varchar(255) NOT NULL,
+	`district_name` varchar(255) NOT NULL,
+	`ward_name` varchar(255) NOT NULL,
 	`detail` text,
 	`postal_code` varchar(25),
 	`latitude` decimal(11,8),
 	`longitude` decimal(10,8),
 	`created_at` timestamp DEFAULT (now()),
-	`updated_at` timestamp ON UPDATE CURRENT_TIMESTAMP,
+	`updated_at` timestamp DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
 	CONSTRAINT `addresses_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
@@ -17,7 +17,14 @@ CREATE TABLE `assets` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`type` enum('image','video') NOT NULL,
 	`url` text NOT NULL,
+	`name` varchar(255) NOT NULL,
+	`format` varchar(25),
+	`tags` json,
 	`folder` varchar(255),
+	`user_id` int,
+	`post_id` int,
+	`created_at` timestamp DEFAULT (now()),
+	`updated_at` timestamp DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
 	CONSTRAINT `assets_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
@@ -36,7 +43,7 @@ CREATE TABLE `chats` (
 	`title` varchar(255),
 	`type` enum('group','individual') NOT NULL,
 	`created_at` timestamp DEFAULT (now()),
-	`updated_at` timestamp ON UPDATE CURRENT_TIMESTAMP,
+	`updated_at` timestamp DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
 	CONSTRAINT `chats_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
@@ -89,6 +96,14 @@ CREATE TABLE `pass_posts` (
 	CONSTRAINT `pass_posts_post_id` PRIMARY KEY(`post_id`)
 );
 --> statement-breakpoint
+CREATE TABLE `post_assets` (
+	`post_id` int NOT NULL,
+	`asset_id` int NOT NULL,
+	`created_at` timestamp DEFAULT (now()),
+	`updated_at` timestamp DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `pk_post_id_asset_id` PRIMARY KEY(`post_id`,`asset_id`)
+);
+--> statement-breakpoint
 CREATE TABLE `post_comment_closures` (
 	`ancestor_id` int NOT NULL,
 	`descendant_id` int NOT NULL,
@@ -101,7 +116,7 @@ CREATE TABLE `post_comments` (
 	`content` text NOT NULL,
 	`post_id` int NOT NULL,
 	`created_at` timestamp DEFAULT (now()),
-	`updated_at` timestamp ON UPDATE CURRENT_TIMESTAMP,
+	`updated_at` timestamp DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
 	CONSTRAINT `post_comments_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
@@ -110,14 +125,13 @@ CREATE TABLE `post_tags` (
 	`label` varchar(25) NOT NULL,
 	`used_count` int NOT NULL DEFAULT 1,
 	`created_at` timestamp DEFAULT (now()),
-	`updated_at` timestamp ON UPDATE CURRENT_TIMESTAMP,
+	`updated_at` timestamp DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
 	CONSTRAINT `post_tags_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
 CREATE TABLE `posts` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`owner_id` int,
-	`address_id` int,
 	`title` varchar(255) NOT NULL,
 	`description` text,
 	`expiration_after` int,
@@ -126,8 +140,14 @@ CREATE TABLE `posts` (
 	`type` enum('rental','pass','join','wanted') NOT NULL,
 	`note` text,
 	`tagsList` json,
+	`address_province` varchar(255) NOT NULL,
+	`address_district` varchar(255) NOT NULL,
+	`address_detail` varchar(255),
+	`address_ward` varchar(255) NOT NULL,
+	`address_longitude` decimal(11,8),
+	`address_latitude` decimal(10,8),
 	`created_at` timestamp DEFAULT (now()),
-	`updated_at` timestamp ON UPDATE CURRENT_TIMESTAMP,
+	`updated_at` timestamp DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
 	CONSTRAINT `posts_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
@@ -141,7 +161,7 @@ CREATE TABLE `properties` (
 	`price_range_end` int,
 	`is_actived` boolean DEFAULT true,
 	`created_at` timestamp DEFAULT (now()),
-	`updated_at` timestamp ON UPDATE CURRENT_TIMESTAMP,
+	`updated_at` timestamp DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
 	CONSTRAINT `properties_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
@@ -158,23 +178,32 @@ CREATE TABLE `rental_posts` (
 CREATE TABLE `tokens` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`value` varchar(255) NOT NULL,
-	`type` enum('refresh','otp','text') NOT NULL DEFAULT 'text',
+	`type` enum('refresh','otp','text','verify') NOT NULL DEFAULT 'text',
 	`is_actived` boolean DEFAULT true,
 	`expiration_time` datetime NOT NULL,
 	`user_id` int,
+	`target` varchar(255),
 	`created_at` timestamp DEFAULT (now()),
-	`updated_at` timestamp ON UPDATE CURRENT_TIMESTAMP,
+	`updated_at` timestamp DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
 	CONSTRAINT `tokens_id` PRIMARY KEY(`id`),
 	CONSTRAINT `idx_tokens_value` UNIQUE(`value`)
 );
 --> statement-breakpoint
 CREATE TABLE `users_detail` (
 	`user_id` int NOT NULL,
-	`role` enum('renter','landlord') NOT NULL,
+	`role` enum('renter','landlord'),
+	`email` varchar(255) NOT NULL,
 	`bio` text,
+	`phone` varchar(25) NOT NULL,
 	`first_name` varchar(50) NOT NULL,
 	`last_name` varchar(50) NOT NULL,
-	`address_id` int,
+	`gender` enum('male','female','others'),
+	`dob` date,
+	`is_email_verified` boolean DEFAULT false,
+	`is_phone_verified` boolean DEFAULT false,
+	`avatar_asset_id` int,
+	`created_at` timestamp DEFAULT (now()),
+	`updated_at` timestamp DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
 	CONSTRAINT `users_detail_user_id` PRIMARY KEY(`user_id`)
 );
 --> statement-breakpoint
@@ -183,7 +212,7 @@ CREATE TABLE `user_post_reactions` (
 	`post_id` int NOT NULL,
 	`reaction_type` enum('like','heart','funny','angry','sad'),
 	`created_at` timestamp DEFAULT (now()),
-	`updated_at` timestamp ON UPDATE CURRENT_TIMESTAMP,
+	`updated_at` timestamp DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
 	CONSTRAINT `pk_user_id_post_id` PRIMARY KEY(`user_id`,`post_id`),
 	CONSTRAINT `idx_user_id_post_id` UNIQUE(`user_id`,`post_id`)
 );
@@ -193,10 +222,14 @@ CREATE TABLE `users` (
 	`password` varchar(255) NOT NULL,
 	`provider` enum('local','facebook','google') NOT NULL DEFAULT 'local',
 	`status` enum('banned','actived','unactived') NOT NULL DEFAULT 'unactived',
+	`facebook_id` varchar(255),
+	`google_id` varchar(255),
 	`token_version` int NOT NULL DEFAULT 0,
 	`created_at` timestamp DEFAULT (now()),
-	`updated_at` timestamp ON UPDATE CURRENT_TIMESTAMP,
-	CONSTRAINT `users_id` PRIMARY KEY(`id`)
+	`updated_at` timestamp DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `users_id` PRIMARY KEY(`id`),
+	CONSTRAINT `users_facebook_id_unique` UNIQUE(`facebook_id`),
+	CONSTRAINT `users_google_id_unique` UNIQUE(`google_id`)
 );
 --> statement-breakpoint
 CREATE TABLE `wanted_posts` (
@@ -209,6 +242,8 @@ CREATE TABLE `wanted_posts` (
 );
 --> statement-breakpoint
 ALTER TABLE `addresses` ADD CONSTRAINT `addresses_user_id_users_id_fk` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `assets` ADD CONSTRAINT `assets_user_id_users_id_fk` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
+ALTER TABLE `assets` ADD CONSTRAINT `assets_post_id_posts_id_fk` FOREIGN KEY (`post_id`) REFERENCES `posts`(`id`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE `chat_members` ADD CONSTRAINT `chat_members_chat_id_chats_id_fk` FOREIGN KEY (`chat_id`) REFERENCES `chats`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `chat_members` ADD CONSTRAINT `chat_members_user_id_users_id_fk` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `join_posts` ADD CONSTRAINT `join_posts_post_id_posts_id_fk` FOREIGN KEY (`post_id`) REFERENCES `posts`(`id`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
@@ -218,23 +253,26 @@ ALTER TABLE `notifications` ADD CONSTRAINT `notifications_user_id_users_id_fk` F
 ALTER TABLE `notifications` ADD CONSTRAINT `notifications_post_id_posts_id_fk` FOREIGN KEY (`post_id`) REFERENCES `posts`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `pass_post_items` ADD CONSTRAINT `pass_post_items_pass_post_id_pass_posts_post_id_fk` FOREIGN KEY (`pass_post_id`) REFERENCES `pass_posts`(`post_id`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE `pass_posts` ADD CONSTRAINT `pass_posts_post_id_posts_id_fk` FOREIGN KEY (`post_id`) REFERENCES `posts`(`id`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
+ALTER TABLE `post_assets` ADD CONSTRAINT `post_assets_post_id_posts_id_fk` FOREIGN KEY (`post_id`) REFERENCES `posts`(`id`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
+ALTER TABLE `post_assets` ADD CONSTRAINT `post_assets_asset_id_assets_id_fk` FOREIGN KEY (`asset_id`) REFERENCES `assets`(`id`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE `post_comment_closures` ADD CONSTRAINT `post_comment_closures_ancestor_id_post_comments_id_fk` FOREIGN KEY (`ancestor_id`) REFERENCES `post_comments`(`id`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE `post_comment_closures` ADD CONSTRAINT `post_comment_closures_descendant_id_post_comments_id_fk` FOREIGN KEY (`descendant_id`) REFERENCES `post_comments`(`id`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE `post_comments` ADD CONSTRAINT `post_comments_post_id_posts_id_fk` FOREIGN KEY (`post_id`) REFERENCES `posts`(`id`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE `posts` ADD CONSTRAINT `posts_owner_id_users_id_fk` FOREIGN KEY (`owner_id`) REFERENCES `users`(`id`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
-ALTER TABLE `posts` ADD CONSTRAINT `posts_address_id_addresses_id_fk` FOREIGN KEY (`address_id`) REFERENCES `addresses`(`id`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE `properties` ADD CONSTRAINT `properties_owner_id_users_id_fk` FOREIGN KEY (`owner_id`) REFERENCES `users`(`id`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE `properties` ADD CONSTRAINT `properties_address_id_addresses_id_fk` FOREIGN KEY (`address_id`) REFERENCES `addresses`(`id`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE `rental_posts` ADD CONSTRAINT `rental_posts_post_id_posts_id_fk` FOREIGN KEY (`post_id`) REFERENCES `posts`(`id`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE `tokens` ADD CONSTRAINT `tokens_user_id_users_id_fk` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE `users_detail` ADD CONSTRAINT `users_detail_user_id_users_id_fk` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
-ALTER TABLE `users_detail` ADD CONSTRAINT `users_detail_address_id_addresses_id_fk` FOREIGN KEY (`address_id`) REFERENCES `addresses`(`id`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
+ALTER TABLE `users_detail` ADD CONSTRAINT `users_detail_avatar_asset_id_assets_id_fk` FOREIGN KEY (`avatar_asset_id`) REFERENCES `assets`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `user_post_reactions` ADD CONSTRAINT `user_post_reactions_user_id_users_id_fk` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE `user_post_reactions` ADD CONSTRAINT `user_post_reactions_post_id_posts_id_fk` FOREIGN KEY (`post_id`) REFERENCES `posts`(`id`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE `wanted_posts` ADD CONSTRAINT `wanted_posts_post_id_posts_id_fk` FOREIGN KEY (`post_id`) REFERENCES `posts`(`id`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
 CREATE INDEX `idx_addresses_user_id` ON `addresses` (`user_id`);--> statement-breakpoint
 CREATE INDEX `idx_addresses_ward_name` ON `addresses` (`district_name`);--> statement-breakpoint
 CREATE INDEX `idx_addresses_ward_name_district_name_province_id` ON `addresses` (`ward_name`,`district_name`,`province_name`);--> statement-breakpoint
+CREATE INDEX `idx_assets_post_id` ON `assets` (`post_id`);--> statement-breakpoint
+CREATE INDEX `idx_assets_user_id_post_id` ON `assets` (`user_id`,`post_id`);--> statement-breakpoint
 CREATE INDEX `idx_chat_members_last_read_at_joined_at` ON `chat_members` (`last_read_at`,`joined_at`);--> statement-breakpoint
 CREATE INDEX `idx_post_comment_closures_ancestor_id_descendant_id` ON `post_comment_closures` (`descendant_id`,`ancestor_id`);--> statement-breakpoint
 CREATE INDEX `idx_post_comment_closures_descendant_id` ON `post_comment_closures` (`descendant_id`);--> statement-breakpoint
