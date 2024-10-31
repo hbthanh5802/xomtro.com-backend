@@ -1,7 +1,9 @@
 import { db } from '@/configs/database.config';
 import { userDetail, users } from '@/models/schema';
+import { ConditionsType } from '@/types/drizzle.type';
 import { userDetailSchemaType, userSchemaType } from '@/types/schema.type';
-import { eq, or } from 'drizzle-orm';
+import { processCondition } from '@/utils/schema.helper';
+import { and, eq, or } from 'drizzle-orm';
 
 // INSERT
 export const insertUser = async (payload: userSchemaType) => {
@@ -43,6 +45,27 @@ export const getFullUserByConditions = async (
 
 export const getUserById = async (userId: number) => {
   return db.select().from(users).where(eq(users.id, userId)).limit(1);
+};
+
+export const selectUserByConditions = async <T extends userSchemaType>(
+  conditions: ConditionsType<T>,
+  limit?: number
+) => {
+  const whereClause = Object.entries(conditions).map(([field, condition]) => {
+    return processCondition(field, condition, users as any);
+  });
+
+  let query = db
+    .select()
+    .from(users)
+    .where(and(...whereClause))
+    .$dynamic();
+
+  if (limit) {
+    query = query.limit(limit);
+  }
+
+  return query;
 };
 
 // UPDATE

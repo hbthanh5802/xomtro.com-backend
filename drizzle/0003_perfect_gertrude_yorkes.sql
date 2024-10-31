@@ -1,1 +1,0 @@
-ALTER TABLE `tokens` MODIFY COLUMN `type` enum('refresh','otp','text','verify') NOT NULL DEFAULT 'text';

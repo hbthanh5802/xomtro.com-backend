@@ -25,6 +25,7 @@ export const users = mysqlTable('users', {
   password: varchar({ length: 255 }).notNull(),
   provider: mysqlEnum(['local', 'facebook', 'google']).notNull().default('local'),
   status: mysqlEnum(['banned', 'actived', 'unactived']).notNull().default('unactived'),
+  googleId: varchar('google_id', { length: 255 }).unique(),
   tokenVersion: int('token_version').notNull().default(0),
   ...timestamps
 });
@@ -37,7 +38,7 @@ export const userDetail = mysqlTable('users_detail', {
       onUpdate: 'cascade'
     }),
   role: mysqlEnum(['renter', 'landlord']),
-  email: varchar({ length: 255 }).notNull(),
+  email: varchar({ length: 255 }).unique().notNull(),
   bio: text(),
   phone: varchar({ length: 25 }).notNull(),
   firstName: varchar('first_name', { length: 50 }).notNull(),
