@@ -5,85 +5,29 @@
     {
       "idx": 0,
       "version": "5",
-      "when": 1729567633072,
-      "tag": "0000_green_talisman",
+      "when": 1730389335420,
+      "tag": "0000_blushing_gertrude_yorkes",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "5",
-      "when": 1729606413204,
-      "tag": "0001_goofy_glorian",
+      "when": 1730391357704,
+      "tag": "0001_fixed_daimon_hellstrom",
       "breakpoints": true
     },
     {
       "idx": 2,
       "version": "5",
-      "when": 1729606911849,
-      "tag": "0002_thankful_reavers",
+      "when": 1730392218903,
+      "tag": "0002_slow_iron_monger",
       "breakpoints": true
     },
     {
       "idx": 3,
       "version": "5",
-      "when": 1729656900962,
-      "tag": "0003_perfect_gertrude_yorkes",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "5",
-      "when": 1729816573571,
-      "tag": "0004_clever_firedrake",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "5",
-      "when": 1729963150886,
-      "tag": "0005_wild_joshua_kane",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "5",
-      "when": 1729965943730,
-      "tag": "0006_round_medusa",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "5",
-      "when": 1730025915100,
-      "tag": "0007_acoustic_stardust",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "5",
-      "when": 1730031359294,
-      "tag": "0008_big_mojo",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "5",
-      "when": 1730034156372,
-      "tag": "0009_lively_nekra",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "5",
-      "when": 1730283362647,
-      "tag": "0010_whole_ted_forrester",
-      "breakpoints": true
-    },
-    {
-      "idx": 11,
-      "version": "5",
-      "when": 1730284924857,
-      "tag": "0011_watery_sally_floyd",
+      "when": 1730392251357,
+      "tag": "0003_bitter_nightshade",
       "breakpoints": true
     }
   ]
