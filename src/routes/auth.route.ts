@@ -25,4 +25,8 @@ router.get('/forgot-password', authController.getForgotPassword);
 
 router.post('/forgot-password', validationAsync(forgotPasswordValidation), authController.completeForgotPassword);
 
+router.post('/disable', authMiddlewares.verifyUser, authController.disableUser);
+
+router.get('/status', authMiddlewares.verifyUser, authController.checkStatus);
+
 export default router;

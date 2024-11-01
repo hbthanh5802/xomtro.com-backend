@@ -1,4 +1,6 @@
 import { getFullUserByConditions, getUserById } from '@/services/user.service';
+import { userStatus } from '@/types/schema.type';
+import ApiError from '@/utils/ApiError.helper';
 import { ApiResponse } from '@/utils/ApiResponse.helper';
 import { verifyJwtToken } from '@/utils/token.helper';
 import { NextFunction, Request, Response } from 'express';
@@ -23,6 +25,12 @@ export const verifyUser = async (req: Request, res: Response, next: NextFunction
 
     if (existingUser.users.tokenVersion !== tokenVersion) {
       return new ApiResponse(StatusCodes.UNAUTHORIZED, ReasonPhrases.UNAUTHORIZED).send(res);
+    }
+
+    if (existingUser.users.status !== userStatus.ACTIVED) {
+      return new ApiResponse(StatusCodes.FORBIDDEN, 'User is not actived', {
+        userStatus: existingUser.users.status
+      }).send(res);
     }
 
     req.currentUser = existingUser;
