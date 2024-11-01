@@ -77,3 +77,9 @@ export const verifyGoogleToken = async (token: string) => {
     throw error;
   }
 };
+
+export const generateOtpCode = (size: number = 6) => {
+  return Array.from({ length: 6 })
+    .map(() => Math.floor(Math.random() * 10))
+    .join('');
+};
