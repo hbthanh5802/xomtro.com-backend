@@ -29,13 +29,16 @@ router.post(
   validationAsync(addressValidation),
   userController.createUserAddress
 );
+
 router.put(
   '/addresses/:addressId',
   authMiddlewares.verifyUser,
   validationAsync(addressValidation),
   userController.updateUserAddress
 );
+
 router.delete('/addresses', authMiddlewares.verifyUser, userController.removeUserAddress);
+
 router.get('/addresses', authMiddlewares.verifyUser, userController.getUserAddresses);
 
 export default router;
