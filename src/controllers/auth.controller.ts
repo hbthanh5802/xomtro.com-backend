@@ -8,16 +8,19 @@ import {
   getUserDetailByEmail,
   insertUser,
   insertUserDetail,
+  selectUserByConditions,
   updateUserById
 } from '@/services/user.service';
 import { googleUserInfoResponseType } from '@/types/oauth.type';
-import { assetSchemaType, userDetailSchemaType, userSchemaType } from '@/types/schema.type';
+import { assetSchemaType, tokenSchemaType, userDetailSchemaType, userSchemaType } from '@/types/schema.type';
 import ApiError from '@/utils/ApiError.helper';
 import { ApiResponse } from '@/utils/ApiResponse.helper';
+import { generateVerifyEmailContent, sendEmail } from '@/utils/email.helper';
 import { generateFileName } from '@/utils/file.helper';
-import { timeInVietNam } from '@/utils/time.helper';
+import { formatTimeForVietnamese, timeInVietNam } from '@/utils/time.helper';
 import {
   generateAccessToken,
+  generateOtpCode,
   generateRefreshToken,
   refreshExpirationTime,
   tokenPayloadType,
@@ -263,6 +266,83 @@ export const googleAuth = async (req: Request, res: Response, next: NextFunction
     const statusCode = !!existingUser.length ? StatusCodes.OK : StatusCodes.CREATED;
 
     return new ApiResponse(statusCode, StatusCodes[statusCode], responseData).send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getForgotPassword = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email } = req.query;
+    if (!email) {
+      return new ApiResponse(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST).send(res);
+    }
+
+    const existingUser = await getUserDetailByEmail(email as string);
+    if (!existingUser.length) {
+      return new ApiResponse(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND).send(res);
+    }
+    // Clear all user existing reset-password token
+    await removeTokenByCondition({
+      target: 'password',
+      userId: existingUser[0].userId,
+      type: 'otp'
+    });
+    //
+    const otpCode = generateOtpCode();
+    const expirationTime = timeInVietNam().add(5, 'minute').toDate();
+    const tokenPayload: tokenSchemaType = {
+      type: 'otp',
+      value: otpCode,
+      expirationTime,
+      userId: existingUser[0].userId,
+      target: 'password'
+    };
+    await insertToken(tokenPayload);
+    // Send email
+    const emailContent = generateVerifyEmailContent(`<h2>${otpCode}</h2>`, formatTimeForVietnamese(expirationTime));
+    await sendEmail(email as string, 'Forgot Your Password', emailContent);
+
+    return new ApiResponse(StatusCodes.OK, ReasonPhrases.OK).send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const completeForgotPassword = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email, password, confirmPassword, otpCode } = req.body;
+    // Check user
+    const existingUser = await getFullUserByConditions({ email });
+    if (!existingUser.length) {
+      return new ApiResponse(StatusCodes.FORBIDDEN, ReasonPhrases.FORBIDDEN).send(res);
+    }
+    const { users } = existingUser[0];
+    //
+    const existingOtpCode = await searchTokenByCondition({
+      value: otpCode,
+      userId: users.id,
+      target: 'password',
+      isActived: true,
+      expirationTime: timeInVietNam().toDate()
+    });
+    if (!existingOtpCode.length) {
+      return new ApiResponse(StatusCodes.FORBIDDEN, 'OTP is expired!').send(res);
+    }
+    // Check validation
+    if (password !== confirmPassword) {
+      return new ApiResponse(StatusCodes.BAD_REQUEST, 'Confirm password must be similar to new password').send(res);
+    }
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await updateUserById(users.id, { password: hashedPassword, tokenVersion: users.tokenVersion + 1 });
+    // Clear all reset password token
+    await removeTokenByCondition({
+      target: 'password',
+      userId: users.id,
+      type: 'otp'
+    });
+
+    return new ApiResponse(StatusCodes.OK, 'Password is changed successfully!').send(res);
   } catch (error) {
     next(error);
   }
