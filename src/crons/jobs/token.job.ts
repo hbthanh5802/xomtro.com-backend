@@ -1,6 +1,6 @@
 import { db } from '@/configs/database.config';
 import { tokens } from '@/models/schema';
-import { updateTokenWithConditions } from '@/services/token.service';
+import { removeTokenByCondition, searchTokenByCondition, updateTokenWithConditions } from '@/services/token.service';
 import { tokenSchemaType } from '@/types/schema.type';
 import { timeInVietNam } from '@/utils/time.helper';
 import { and, eq, lt } from 'drizzle-orm';
@@ -36,4 +36,16 @@ export const revokeExpiredTokensJob = () => {
     },
     { scheduled: true }
   );
+};
+
+export const clearExpiredTokenJob = () => {
+  cron.schedule('*/15 * * * *', async () => {
+    try {
+      const expiredTokenList = await searchTokenByCondition({ isActived: false });
+      await removeTokenByCondition({ isActived: false });
+      console.log('[INFO] CRON_JOB: Clear expired tokens successfully! Effected rows: ' + expiredTokenList.length);
+    } catch (error) {
+      console.error('[ERROR ❌] CRON_JOB: Failed to clear expired tokens', error);
+    }
+  });
 };

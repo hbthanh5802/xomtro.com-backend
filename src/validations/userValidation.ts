@@ -44,3 +44,15 @@ export const oAuthValidation = z.object({
 });
 
 export const addressValidation = createInsertSchema(addresses);
+
+export const forgotPasswordValidation = z
+  .object({
+    email: emailValidation,
+    password: passwordValidation,
+    confirmPassword: passwordValidation,
+    otpCode: z.string().length(6, { message: 'OTP has the invalid length!' })
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Confirm password must be similar to Password',
+    path: ['confirmPassword']
+  });
