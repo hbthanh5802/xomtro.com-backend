@@ -9,10 +9,17 @@ import {
   insertUser,
   insertUserDetail,
   selectUserByConditions,
-  updateUserById
+  updateUserById,
+  updateUserDetailById
 } from '@/services/user.service';
 import { googleUserInfoResponseType } from '@/types/oauth.type';
-import { assetSchemaType, tokenSchemaType, userDetailSchemaType, userSchemaType } from '@/types/schema.type';
+import {
+  assetSchemaType,
+  tokenSchemaType,
+  userDetailSchemaType,
+  userSchemaType,
+  userStatus
+} from '@/types/schema.type';
 import ApiError from '@/utils/ApiError.helper';
 import { ApiResponse } from '@/utils/ApiResponse.helper';
 import { generateVerifyEmailContent, sendEmail } from '@/utils/email.helper';
@@ -30,6 +37,23 @@ import {
 import bcrypt from 'bcrypt';
 import { NextFunction, Request, Response } from 'express';
 import { ReasonPhrases, StatusCodes } from 'http-status-codes';
+
+export const checkStatus = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const currentUser = req.currentUser;
+    const { users, users_detail } = currentUser!;
+
+    if (users.status === userStatus.ACTIVED) {
+      return new ApiResponse(StatusCodes.OK, ReasonPhrases.OK).send(res);
+    }
+
+    if (users.status === userStatus.BANNED) {
+      return new ApiResponse(StatusCodes.FORBIDDEN, ReasonPhrases.FORBIDDEN).send(res);
+    }
+  } catch (error) {
+    throw new ApiError(StatusCodes.UNAUTHORIZED, ReasonPhrases.UNAUTHORIZED);
+  }
+};
 
 export const registerUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -343,6 +367,19 @@ export const completeForgotPassword = async (req: Request, res: Response, next: 
     });
 
     return new ApiResponse(StatusCodes.OK, 'Password is changed successfully!').send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const disableUser = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const currentUser = req.currentUser;
+    const { users } = currentUser!;
+    await updateUserById(users.id!, { status: 'unactived' });
+    await updateUserDetailById(users.id!, { isEmailVerified: false });
+
+    return new ApiResponse(StatusCodes.OK, 'Disable account successfully!').send(res);
   } catch (error) {
     next(error);
   }
