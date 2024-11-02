@@ -1,4 +1,4 @@
-import { getFullUserByConditions, getUserById } from '@/services/user.service';
+import { selectFullUserByConditions } from '@/services/user.service';
 import { userStatus } from '@/types/schema.type';
 import ApiError from '@/utils/ApiError.helper';
 import { ApiResponse } from '@/utils/ApiResponse.helper';
@@ -16,7 +16,7 @@ export const verifyUser = async (req: Request, res: Response, next: NextFunction
     const tokenPayload = await verifyJwtToken(userToken, 'access');
     const { userId, tokenVersion } = tokenPayload;
 
-    const userResult = await getFullUserByConditions({ userId });
+    const userResult = await selectFullUserByConditions({ userId });
     const existingUser = userResult[0];
 
     if (!existingUser) {
