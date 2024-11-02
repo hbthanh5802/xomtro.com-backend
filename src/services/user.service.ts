@@ -15,11 +15,15 @@ export const insertUserDetail = async (payload: userDetailSchemaType) => {
 };
 
 // SELECT
-export const getUserDetailByEmail = async (email: string) => {
+export const selectUserDetailByEmail = async (email: string) => {
   return db.select().from(userDetail).where(eq(userDetail.email, email));
 };
 
-export const getFullUserByConditions = async (
+export const selectUserDetailById = async (userId: number) => {
+  return db.select().from(userDetail).where(eq(userDetail.userId, userId));
+};
+
+export const selectFullUserByConditions = async (
   filters: Partial<Pick<userDetailSchemaType, 'userId' | 'phone' | 'email'>>
 ) => {
   const conditions = [];
@@ -43,7 +47,7 @@ export const getFullUserByConditions = async (
     .where(or(...conditions));
 };
 
-export const getUserById = async (userId: number) => {
+export const selectUserById = async (userId: number) => {
   return db.select().from(users).where(eq(users.id, userId)).limit(1);
 };
 

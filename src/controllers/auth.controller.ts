@@ -4,11 +4,11 @@ import { insertAsset } from '@/services/asset.service';
 import { uploadImageFromUrl } from '@/services/fileUpload.service';
 import { insertToken, removeTokenByCondition, removeTokenById, searchTokenByCondition } from '@/services/token.service';
 import {
-  getFullUserByConditions,
-  getUserDetailByEmail,
   insertUser,
   insertUserDetail,
+  selectFullUserByConditions,
   selectUserByConditions,
+  selectUserDetailByEmail,
   updateUserById,
   updateUserDetailById
 } from '@/services/user.service';
@@ -58,7 +58,7 @@ export const checkStatus = async (req: Request, res: Response, next: NextFunctio
 export const registerUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, phone, password, role, firstName, lastName } = req.body;
-    const existingUser = await getUserDetailByEmail(email);
+    const existingUser = await selectUserDetailByEmail(email);
     if (existingUser.length) {
       throw new ApiError(StatusCodes.CONFLICT, 'Email is already used!');
     }
@@ -107,7 +107,7 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
   try {
     const { email, phone, password } = req.body;
 
-    const fullUserResult = await getFullUserByConditions({ email });
+    const fullUserResult = await selectFullUserByConditions({ email });
     if (!fullUserResult.length) {
       return new ApiResponse(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND).send(res);
     }
@@ -218,7 +218,7 @@ export const googleAuth = async (req: Request, res: Response, next: NextFunction
     const { email, email_verified, given_name, family_name, picture, sub } = userInfoResponse;
 
     // Check existing user in database
-    const existingUser = await getUserDetailByEmail(email);
+    const existingUser = await selectUserDetailByEmail(email);
     if (!existingUser.length) {
       // Create a new user
       const defaultUserPassword = given_name.toLowerCase() + '@123456@password';
@@ -262,7 +262,7 @@ export const googleAuth = async (req: Request, res: Response, next: NextFunction
       await insertUserDetail(userDetailPayload);
     }
 
-    const fullUserResult = await getFullUserByConditions({ email: email });
+    const fullUserResult = await selectFullUserByConditions({ email: email });
     if (!fullUserResult.length) {
       throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Some thing went wrong!');
     }
@@ -302,7 +302,7 @@ export const getForgotPassword = async (req: Request, res: Response, next: NextF
       return new ApiResponse(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST).send(res);
     }
 
-    const existingUser = await getUserDetailByEmail(email as string);
+    const existingUser = await selectUserDetailByEmail(email as string);
     if (!existingUser.length) {
       return new ApiResponse(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND).send(res);
     }
@@ -337,7 +337,7 @@ export const completeForgotPassword = async (req: Request, res: Response, next: 
   try {
     const { email, password, confirmPassword, otpCode } = req.body;
     // Check user
-    const existingUser = await getFullUserByConditions({ email });
+    const existingUser = await selectFullUserByConditions({ email });
     if (!existingUser.length) {
       return new ApiResponse(StatusCodes.FORBIDDEN, ReasonPhrases.FORBIDDEN).send(res);
     }
