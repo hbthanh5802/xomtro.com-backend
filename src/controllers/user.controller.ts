@@ -7,8 +7,19 @@ import {
 import { insertAsset, selectAssetById, selectAssetsByConditions, updateAssetById } from '@/services/asset.service';
 import { deleteResource, uploadAvatar, uploadImage } from '@/services/fileUpload.service';
 import { searchTokenByCondition } from '@/services/token.service';
-import { getUserDetailByEmail, updateUserById, updateUserDetailById } from '@/services/user.service';
-import { addressSchemaType, assetSchemaType, assetType, tokenSchemaType } from '@/types/schema.type';
+import {
+  selectUserDetailByEmail,
+  selectUserDetailById,
+  updateUserById,
+  updateUserDetailById
+} from '@/services/user.service';
+import {
+  addressSchemaType,
+  assetSchemaType,
+  assetType,
+  tokenSchemaType,
+  userDetailSchemaType
+} from '@/types/schema.type';
 import ApiError from '@/utils/ApiError.helper';
 import { ApiResponse } from '@/utils/ApiResponse.helper';
 import { generateVerifyEmailContent, sendEmail } from '@/utils/email.helper';
@@ -27,7 +38,7 @@ export const getVerifyUserEmail = async (req: Request, res: Response, next: Next
     const email = req.query.email as string;
     if (!email) throw new ApiError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
 
-    const userDetailResult = await getUserDetailByEmail(email);
+    const userDetailResult = await selectUserDetailByEmail(email);
     const existingUser = userDetailResult[0];
 
     if (!existingUser) {
@@ -75,7 +86,7 @@ export const verifyUserEmail = async (req: Request, res: Response, next: NextFun
       throw new ApiError(StatusCodes.UNAUTHORIZED, ReasonPhrases.UNAUTHORIZED);
     }
 
-    const userDetailResult = await getUserDetailByEmail(email);
+    const userDetailResult = await selectUserDetailByEmail(email);
     const existingUser = userDetailResult[0];
     const tokenResult = await searchTokenByCondition({
       value: token,
@@ -304,6 +315,47 @@ export const getUserAddresses = async (req: Request, res: Response, next: NextFu
     });
 
     return new ApiResponse(StatusCodes.OK, ReasonPhrases.OK, selectResult).send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateUserProfile = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const currentUser = req.currentUser;
+    const { users_detail } = currentUser!;
+    const { bio, firstName, lastName, phone, gender, dob } = req.body;
+
+    const updateProfilePayload: Partial<userDetailSchemaType> = {
+      bio,
+      firstName,
+      lastName,
+      phone,
+      gender,
+      dob
+    };
+    await updateUserDetailById(users_detail.userId!, updateProfilePayload);
+    const userDetailResult = await selectUserDetailByEmail(users_detail.email);
+
+    return new ApiResponse(StatusCodes.OK, 'Update profile successfully!', userDetailResult[0]).send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getUserProfile = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { userId } = req.params;
+    if (!userId) {
+      return new ApiResponse(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND).send(res);
+    }
+
+    const userDetailResult = await selectUserDetailById(Number(userId));
+    if (!userDetailResult.length) {
+      return new ApiResponse(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND).send(res);
+    }
+
+    return new ApiResponse(StatusCodes.OK, ReasonPhrases.OK, userDetailResult[0]).send(res);
   } catch (error) {
     next(error);
   }
