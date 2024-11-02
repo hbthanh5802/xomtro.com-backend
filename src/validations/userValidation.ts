@@ -1,4 +1,4 @@
-import { addresses } from '@/models/schema';
+import { addresses, userDetail } from '@/models/schema';
 import { userRole } from '@/types/schema.type';
 import { emailValidation, passwordValidation, phoneValidation } from '@/validations/commonValidation';
 import { createInsertSchema } from 'drizzle-zod';
@@ -56,3 +56,14 @@ export const forgotPasswordValidation = z
     message: 'Confirm password must be similar to Password',
     path: ['confirmPassword']
   });
+
+export const updateUserProfileValidation = createInsertSchema(userDetail)
+  .pick({
+    bio: true,
+    firstName: true,
+    lastName: true,
+    gender: true,
+    phone: true
+  })
+  .strict()
+  .partial();
