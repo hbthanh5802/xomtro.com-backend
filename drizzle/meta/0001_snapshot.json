@@ -1,8 +1,8 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "62268144-f9b2-4f94-926b-e10973fbe1c5",
-  "prevId": "c940c2a8-482b-4bb5-a13a-5401f2253612",
+  "id": "747d3af9-096d-4000-922e-05313cc52f1e",
+  "prevId": "8aa17393-2c17-42d2-b8b0-3ee078d8fa32",
   "tables": {
     "addresses": {
       "name": "addresses",
@@ -1431,7 +1431,7 @@
         },
         "min_lease_term_unit": {
           "name": "min_lease_term_unit",
-          "type": "enum('enum','day','month','year')",
+          "type": "enum('hour','day','month','year')",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
@@ -1600,7 +1600,7 @@
           "name": "email",
           "type": "varchar(255)",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "bio": {
@@ -1723,7 +1723,14 @@
           ]
         }
       },
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "users_detail_email_unique": {
+          "name": "users_detail_email_unique",
+          "columns": [
+            "email"
+          ]
+        }
+      },
       "checkConstraint": {}
     },
     "user_post_reactions": {
@@ -1850,13 +1857,6 @@
           "autoincrement": false,
           "default": "'unactived'"
         },
-        "facebook_id": {
-          "name": "facebook_id",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
         "google_id": {
           "name": "google_id",
           "type": "varchar(255)",
@@ -1901,12 +1901,6 @@
         }
       },
       "uniqueConstraints": {
-        "users_facebook_id_unique": {
-          "name": "users_facebook_id_unique",
-          "columns": [
-            "facebook_id"
-          ]
-        },
         "users_google_id_unique": {
           "name": "users_google_id_unique",
           "columns": [

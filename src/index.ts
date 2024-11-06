@@ -15,9 +15,9 @@ const app = express();
 
 // Middlewares
 app.use(cors(corsOptions));
-app.use(bodyParser.json());
 app.use(cookieParser());
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(morgan('tiny'));
 
 // Router

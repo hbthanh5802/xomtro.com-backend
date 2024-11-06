@@ -166,15 +166,12 @@ export const refreshUserToken = async (req: Request, res: Response, next: NextFu
       return new ApiResponse(StatusCodes.UNAUTHORIZED, ReasonPhrases.UNAUTHORIZED).send(res);
     }
 
-    await removeTokenById(existingUserRefreshToken.id);
-
     const newTokenPayload: tokenPayloadType = {
       userId: tokenPayload.userId,
       email: tokenPayload.email,
       tokenVersion: tokenPayload.tokenVersion
     };
-
-    const { accessToken: newRefreshToken, refreshToken: newAccessToken } =
+    const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
       await handleUserTokenProcess(newTokenPayload);
 
     res.cookie('refreshToken', newRefreshToken, {
@@ -183,7 +180,7 @@ export const refreshUserToken = async (req: Request, res: Response, next: NextFu
       httpOnly: true
     });
 
-    const responseData = { meta: { accessToken: newAccessToken, refresh: newRefreshToken } };
+    const responseData = { meta: { accessToken: newAccessToken, refreshToken: newRefreshToken } };
     return new ApiResponse(StatusCodes.OK, 'Refresh successfully!', responseData).send(res);
   } catch (error) {
     next(error);
