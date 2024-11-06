@@ -151,7 +151,7 @@ export const posts = mysqlTable('posts', {
   }),
   title: varchar({ length: 255 }).notNull(),
   description: text(),
-  expiration_after: int('expiration_after'),
+  expirationAfter: int('expiration_after'),
   expirationAfterUnit: mysqlEnum('expiration_after_unit', ['day', 'hour', 'minute']).default('day'),
   status: mysqlEnum(['actived', 'unactived', 'removed']).default('actived'),
   type: mysqlEnum(['rental', 'pass', 'join', 'wanted']).notNull(),
@@ -188,7 +188,7 @@ export const postAssets = mysqlTable(
 );
 
 export const rentalPosts = mysqlTable('rental_posts', {
-  id: int('post_id')
+  postId: int('post_id')
     .primaryKey()
     .notNull()
     .references(() => posts.id, {
@@ -199,11 +199,11 @@ export const rentalPosts = mysqlTable('rental_posts', {
   priceEnd: int('price_end'),
   priceUnit: mysqlEnum('price_unit', ['vnd', 'usd']).notNull(),
   minLeaseTerm: int('min_lease_term').notNull(),
-  minLeaseTermUnit: mysqlEnum('min_lease_term_unit', ['enum', 'day', 'month', 'year']).notNull()
+  minLeaseTermUnit: mysqlEnum('min_lease_term_unit', ['hour', 'day', 'month', 'year']).notNull()
 });
 
 export const wantedPosts = mysqlTable('wanted_posts', {
-  id: int('post_id')
+  postId: int('post_id')
     .primaryKey()
     .notNull()
     .references(() => posts.id, {
@@ -217,7 +217,7 @@ export const wantedPosts = mysqlTable('wanted_posts', {
 });
 
 export const joinPosts = mysqlTable('join_posts', {
-  id: int('post_id')
+  postId: int('post_id')
     .primaryKey()
     .notNull()
     .references(() => posts.id, {
@@ -231,7 +231,7 @@ export const joinPosts = mysqlTable('join_posts', {
 });
 
 export const passPosts = mysqlTable('pass_posts', {
-  id: int('post_id')
+  postId: int('post_id')
     .primaryKey()
     .notNull()
     .references(() => posts.id, {
@@ -247,7 +247,7 @@ export const passPostItems = mysqlTable('pass_post_items', {
   id: int().primaryKey().autoincrement(),
   passPostId: int('pass_post_id')
     .notNull()
-    .references(() => passPosts.id, {
+    .references(() => passPosts.postId, {
       onDelete: 'cascade',
       onUpdate: 'cascade'
     }),

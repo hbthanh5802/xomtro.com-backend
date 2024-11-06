@@ -1,0 +1,1 @@
+ALTER TABLE `rental_posts` MODIFY COLUMN `min_lease_term_unit` enum('hour','day','month','year') NOT NULL;
