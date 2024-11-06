@@ -1,1 +1,0 @@
-ALTER TABLE `users_detail` MODIFY COLUMN `email` varchar(255);

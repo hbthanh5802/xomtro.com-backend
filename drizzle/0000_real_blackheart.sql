@@ -204,7 +204,8 @@ CREATE TABLE `users_detail` (
 	`avatar_asset_id` int,
 	`created_at` timestamp DEFAULT (now()),
 	`updated_at` timestamp DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
-	CONSTRAINT `users_detail_user_id` PRIMARY KEY(`user_id`)
+	CONSTRAINT `users_detail_user_id` PRIMARY KEY(`user_id`),
+	CONSTRAINT `users_detail_email_unique` UNIQUE(`email`)
 );
 --> statement-breakpoint
 CREATE TABLE `user_post_reactions` (
@@ -222,13 +223,11 @@ CREATE TABLE `users` (
 	`password` varchar(255) NOT NULL,
 	`provider` enum('local','facebook','google') NOT NULL DEFAULT 'local',
 	`status` enum('banned','actived','unactived') NOT NULL DEFAULT 'unactived',
-	`facebook_id` varchar(255),
 	`google_id` varchar(255),
 	`token_version` int NOT NULL DEFAULT 0,
 	`created_at` timestamp DEFAULT (now()),
 	`updated_at` timestamp DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
 	CONSTRAINT `users_id` PRIMARY KEY(`id`),
-	CONSTRAINT `users_facebook_id_unique` UNIQUE(`facebook_id`),
 	CONSTRAINT `users_google_id_unique` UNIQUE(`google_id`)
 );
 --> statement-breakpoint

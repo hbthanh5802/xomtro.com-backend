@@ -7,8 +7,12 @@ import { and, eq } from 'drizzle-orm';
 import { queryOptions, withPagination } from './../utils/schema.helper';
 
 // INSERT
-export const insertAsset = async (payload: assetSchemaType) => {
-  return db.insert(assets).values(payload).$returningId();
+export const insertAsset = async (payload: assetSchemaType | assetSchemaType[]) => {
+  if (Array.isArray(payload)) {
+    return db.insert(assets).values(payload).$returningId();
+  } else {
+    return db.insert(assets).values(payload).$returningId();
+  }
 };
 
 // UPDATE
