@@ -5,6 +5,7 @@ import {
   insertPost,
   insertPostAssets,
   insertRentalPost,
+  insertWantedPost,
   selectFullPostDetailById,
   selectPostById,
   selectRentalPostByConditionType,
@@ -17,7 +18,8 @@ import {
   postAssetsSchemaType,
   postSchemaType,
   postType,
-  rentalPostSchemaType
+  rentalPostSchemaType,
+  wantedPostSchemaType
 } from '@/types/schema.type';
 import ApiError from '@/utils/ApiError.helper';
 import { ApiResponse } from '@/utils/ApiResponse.helper';
@@ -160,7 +162,7 @@ export const createRentalPost = async (req: Request, res: Response, next: NextFu
       hasParking: !!Number(hasParking),
       hasSecurity: !!Number(hasSecurity),
       hasElevator: !!Number(hasElevator),
-      allowPets: !!Number(hasElevator)
+      allowPets: !!Number(allowPets)
     };
     await insertRentalPost(insertRentalPostPayload);
 
@@ -179,7 +181,100 @@ export const createRentalPost = async (req: Request, res: Response, next: NextFu
   }
 };
 
-export const getPost = async (req: Request, res: Response, next: NextFunction) => {
+export const createWantedPost = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    let {
+      title,
+      description,
+      addressProvince,
+      addressDistrict,
+      addressWard,
+      addressDetail,
+      expirationAfter,
+      expirationAfterUnit,
+      addressLongitude,
+      addressLatitude,
+      note,
+      priceStart,
+      priceEnd,
+      priceUnit,
+      moveInDate,
+      hasFurniture,
+      hasAirConditioner,
+      hasWashingMachine,
+      hasRefrigerator,
+      hasPrivateBathroom,
+      hasParking,
+      hasSecurity,
+      hasElevator,
+      allowPets
+    } = req.body;
+    const currentUser = req.currentUser!;
+    const { users, users_detail } = currentUser;
+
+    if (!addressLatitude || !addressLongitude) {
+      const address = `${addressWard} ${addressDistrict} ${addressProvince}`;
+      const getGeoCodingResult = await geocodingByGeocodeMap(address);
+      addressLatitude = getGeoCodingResult.latitude;
+      addressLongitude = getGeoCodingResult.longitude;
+    }
+
+    const insertPostPayload: postSchemaType = {
+      ownerId: users.id,
+      type: 'wanted',
+      title,
+      note,
+      description,
+      addressProvince,
+      addressDistrict,
+      addressWard,
+      addressDetail,
+      addressLongitude,
+      addressLatitude,
+      expirationAfter,
+      expirationAfterUnit
+    };
+    const insertPostResult = await insertPost(insertPostPayload);
+    const { id: postId } = insertPostResult[0];
+
+    if (isNaN(Date.parse(moveInDate))) {
+      throw new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, 'moveInDate value is invalid');
+    }
+
+    const insertWantedPostPayload: wantedPostSchemaType = {
+      postId,
+      priceStart,
+      priceEnd,
+      priceUnit,
+      moveInDate: new Date(moveInDate),
+      hasFurniture: !!Number(hasFurniture),
+      hasAirConditioner: !!Number(hasAirConditioner),
+      hasWashingMachine: !!Number(hasWashingMachine),
+      hasRefrigerator: !!Number(hasRefrigerator),
+      hasPrivateBathroom: !!Number(hasPrivateBathroom),
+      hasParking: !!Number(hasParking),
+      hasSecurity: !!Number(hasSecurity),
+      hasElevator: !!Number(hasElevator),
+      allowPets: !!Number(allowPets)
+    };
+    await insertWantedPost(insertWantedPostPayload);
+
+    if (req.files?.length) {
+      const uploadImageResult = await uploadPostImageHandler(req);
+      if (uploadImageResult.success.length) {
+        await insertPostAssetsHandler(uploadImageResult.success, { userId: users.id!, postId });
+      } else {
+        throw new ApiResponse(StatusCodes.BAD_REQUEST, 'Failed to upload!', uploadImageResult).send(res);
+      }
+    }
+
+    return new ApiResponse(StatusCodes.CREATED, ReasonPhrases.CREATED, { postId }).send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getPostById = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { postId } = req.params;
     if (!postId) {
@@ -199,7 +294,7 @@ export const getPost = async (req: Request, res: Response, next: NextFunction) =
   }
 };
 
-export const searchPosts = async (req: Request, res: Response, next: NextFunction) => {
+export const searchRentalPosts = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { type } = req.params;
     const { whereConditions, orderConditions, pagination } = req.body;
