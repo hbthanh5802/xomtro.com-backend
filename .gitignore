@@ -23,6 +23,7 @@ coverage
 
 # dotenv environment variables file
 .env
+.env.production
 .env.local
 .env.development.local
 .env.test.local
@@ -46,3 +47,4 @@ yarn.lock
 
 # Testing
 /coverage
+.env.production

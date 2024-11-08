@@ -1,4 +1,4 @@
-import * as postController from '@/controllers/post.cotroller';
+import * as postController from '@/controllers/post.controller';
 import * as authMiddleware from '@/middlewares/auth.middleware';
 import { uploadMiddleware } from '@/middlewares/upload.middleware';
 import { validationAsync } from '@/middlewares/validationSchema.middleware';
@@ -14,5 +14,9 @@ router.post(
   // validationAsync(insertRentalPostValidation),
   postController.createRentalPost
 );
+
+router.post('/search/:type', postController.searchPosts);
+
+router.get('/:postId', postController.getPost);
 
 export default router;
