@@ -15,6 +15,20 @@
       "when": 1730903891886,
       "tag": "0001_ordinary_cyclops",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1731078616212,
+      "tag": "0002_wandering_naoko",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1731079180049,
+      "tag": "0003_cold_maria_hill",
+      "breakpoints": true
     }
   ]
 }

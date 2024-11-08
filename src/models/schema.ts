@@ -19,6 +19,7 @@ import {
   unique,
   varchar
 } from 'drizzle-orm/mysql-core';
+import { room_amenities } from './../utils/schema.helper';
 
 export const users = mysqlTable('users', {
   id: int().primaryKey().autoincrement(),
@@ -156,7 +157,6 @@ export const posts = mysqlTable('posts', {
   status: mysqlEnum(['actived', 'unactived', 'removed']).default('actived'),
   type: mysqlEnum(['rental', 'pass', 'join', 'wanted']).notNull(),
   note: text(),
-  tagsList: json(),
   addressProvince: varchar('address_province', { length: 255 }).notNull(),
   addressDistrict: varchar('address_district', { length: 255 }).notNull(),
   addressDetail: varchar('address_detail', { length: 255 }),
@@ -199,7 +199,8 @@ export const rentalPosts = mysqlTable('rental_posts', {
   priceEnd: int('price_end'),
   priceUnit: mysqlEnum('price_unit', ['vnd', 'usd']).notNull(),
   minLeaseTerm: int('min_lease_term').notNull(),
-  minLeaseTermUnit: mysqlEnum('min_lease_term_unit', ['hour', 'day', 'month', 'year']).notNull()
+  minLeaseTermUnit: mysqlEnum('min_lease_term_unit', ['hour', 'day', 'month', 'year']).notNull(),
+  ...room_amenities
 });
 
 export const wantedPosts = mysqlTable('wanted_posts', {
@@ -213,7 +214,8 @@ export const wantedPosts = mysqlTable('wanted_posts', {
   priceStart: int('price_start').notNull(),
   priceEnd: int('price_end'),
   priceUnit: mysqlEnum('price_unit', ['vnd', 'usd']).notNull(),
-  moveInDate: date('move_in_date').notNull()
+  moveInDate: date('move_in_date').notNull(),
+  ...room_amenities
 });
 
 export const joinPosts = mysqlTable('join_posts', {
@@ -227,7 +229,8 @@ export const joinPosts = mysqlTable('join_posts', {
   priceStart: int('price_start').notNull(),
   priceEnd: int('price_end'),
   priceUnit: mysqlEnum('price_unit', ['vnd', 'usd']).notNull(),
-  moveInDate: date('move_in_date').notNull()
+  moveInDate: date('move_in_date').notNull(),
+  ...room_amenities
 });
 
 export const passPosts = mysqlTable('pass_posts', {
@@ -275,12 +278,12 @@ export const userPostReactions = mysqlTable(
   })
 );
 
-export const postTags = mysqlTable('post_tags', {
-  id: int().primaryKey().autoincrement(),
-  label: varchar({ length: 25 }).notNull(),
-  usedCount: int('used_count').notNull().default(1),
-  ...timestamps
-});
+// export const postTags = mysqlTable('post_tags', {
+//   id: int().primaryKey().autoincrement(),
+//   label: varchar({ length: 25 }).notNull(),
+//   usedCount: int('used_count').notNull().default(1),
+//   ...timestamps
+// });
 
 export const postComments = mysqlTable('post_comments', {
   id: int().primaryKey().autoincrement(),
