@@ -18,13 +18,25 @@ import {
   notInArray,
   sql
 } from 'drizzle-orm';
-import { MySqlColumn, MySqlSelect, timestamp } from 'drizzle-orm/mysql-core';
+import { MySqlColumn, MySqlSelect, boolean, timestamp } from 'drizzle-orm/mysql-core';
 
 export const timestamps = {
   createdAt: timestamp('created_at').default(sql`(now())`),
   updatedAt: timestamp('updated_at')
     .default(sql`(now())`)
     .onUpdateNow()
+};
+
+export const room_amenities = {
+  hasFurniture: boolean('has_furniture').default(false),
+  hasAirConditioner: boolean('has_air_conditioner').default(false),
+  hasWashingMachine: boolean('has_washing_machine').default(false),
+  hasRefrigerator: boolean('has_refrigerator').default(false),
+  hasPrivateBathroom: boolean('has_private_bathroom').default(false),
+  hasParking: boolean('has_parking').default(false),
+  hasSecurity: boolean('has_security').default(false),
+  hasElevator: boolean('has_elevator').default(false),
+  allowPets: boolean('allow_pets').default(false)
 };
 
 export const withPagination = <T extends MySqlSelect>(qb: T, page: number = 1, pageSize: number = 10) => {

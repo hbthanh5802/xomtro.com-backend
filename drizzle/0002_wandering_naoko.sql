@@ -1,0 +1,27 @@
+ALTER TABLE `join_posts` ADD `has_furniture` boolean DEFAULT false;--> statement-breakpoint
+ALTER TABLE `join_posts` ADD `has_air_conditioner` boolean DEFAULT false;--> statement-breakpoint
+ALTER TABLE `join_posts` ADD `has_washing_machine` boolean DEFAULT false;--> statement-breakpoint
+ALTER TABLE `join_posts` ADD `has_refrigerator` boolean DEFAULT false;--> statement-breakpoint
+ALTER TABLE `join_posts` ADD `has_private_bathroom` boolean DEFAULT false;--> statement-breakpoint
+ALTER TABLE `join_posts` ADD `has_parking` boolean DEFAULT false;--> statement-breakpoint
+ALTER TABLE `join_posts` ADD `has_security` boolean DEFAULT false;--> statement-breakpoint
+ALTER TABLE `join_posts` ADD `has_elevator` boolean DEFAULT false;--> statement-breakpoint
+ALTER TABLE `join_posts` ADD `allow_pets` boolean DEFAULT false;--> statement-breakpoint
+ALTER TABLE `rental_posts` ADD `has_furniture` boolean DEFAULT false;--> statement-breakpoint
+ALTER TABLE `rental_posts` ADD `has_air_conditioner` boolean DEFAULT false;--> statement-breakpoint
+ALTER TABLE `rental_posts` ADD `has_washing_machine` boolean DEFAULT false;--> statement-breakpoint
+ALTER TABLE `rental_posts` ADD `has_refrigerator` boolean DEFAULT false;--> statement-breakpoint
+ALTER TABLE `rental_posts` ADD `has_private_bathroom` boolean DEFAULT false;--> statement-breakpoint
+ALTER TABLE `rental_posts` ADD `has_parking` boolean DEFAULT false;--> statement-breakpoint
+ALTER TABLE `rental_posts` ADD `has_security` boolean DEFAULT false;--> statement-breakpoint
+ALTER TABLE `rental_posts` ADD `has_elevator` boolean DEFAULT false;--> statement-breakpoint
+ALTER TABLE `rental_posts` ADD `allow_pets` boolean DEFAULT false;--> statement-breakpoint
+ALTER TABLE `wanted_posts` ADD `has_furniture` boolean DEFAULT false;--> statement-breakpoint
+ALTER TABLE `wanted_posts` ADD `has_air_conditioner` boolean DEFAULT false;--> statement-breakpoint
+ALTER TABLE `wanted_posts` ADD `has_washing_machine` boolean DEFAULT false;--> statement-breakpoint
+ALTER TABLE `wanted_posts` ADD `has_refrigerator` boolean DEFAULT false;--> statement-breakpoint
+ALTER TABLE `wanted_posts` ADD `has_private_bathroom` boolean DEFAULT false;--> statement-breakpoint
+ALTER TABLE `wanted_posts` ADD `has_parking` boolean DEFAULT false;--> statement-breakpoint
+ALTER TABLE `wanted_posts` ADD `has_security` boolean DEFAULT false;--> statement-breakpoint
+ALTER TABLE `wanted_posts` ADD `has_elevator` boolean DEFAULT false;--> statement-breakpoint
+ALTER TABLE `wanted_posts` ADD `allow_pets` boolean DEFAULT false;

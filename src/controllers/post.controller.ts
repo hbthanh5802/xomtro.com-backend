@@ -102,12 +102,20 @@ export const createRentalPost = async (req: Request, res: Response, next: NextFu
       addressLongitude,
       addressLatitude,
       note,
-      tagsList,
       priceStart,
       priceEnd,
       priceUnit,
       minLeaseTerm,
-      minLeaseTermUnit
+      minLeaseTermUnit,
+      hasFurniture,
+      hasAirConditioner,
+      hasWashingMachine,
+      hasRefrigerator,
+      hasPrivateBathroom,
+      hasParking,
+      hasSecurity,
+      hasElevator,
+      allowPets
     } = req.body;
     const currentUser = req.currentUser!;
     const { users, users_detail } = currentUser;
@@ -132,8 +140,7 @@ export const createRentalPost = async (req: Request, res: Response, next: NextFu
       addressLongitude,
       addressLatitude,
       expirationAfter,
-      expirationAfterUnit,
-      tagsList
+      expirationAfterUnit
     };
     const insertPostResult = await insertPost(insertPostPayload);
     const { id: postId } = insertPostResult[0];
@@ -144,7 +151,16 @@ export const createRentalPost = async (req: Request, res: Response, next: NextFu
       priceEnd,
       priceUnit,
       minLeaseTerm,
-      minLeaseTermUnit
+      minLeaseTermUnit,
+      hasFurniture: !!Number(hasFurniture),
+      hasAirConditioner: !!Number(hasAirConditioner),
+      hasWashingMachine: !!Number(hasWashingMachine),
+      hasRefrigerator: !!Number(hasRefrigerator),
+      hasPrivateBathroom: !!Number(hasPrivateBathroom),
+      hasParking: !!Number(hasParking),
+      hasSecurity: !!Number(hasSecurity),
+      hasElevator: !!Number(hasElevator),
+      allowPets: !!Number(hasElevator)
     };
     await insertRentalPost(insertRentalPostPayload);
 
@@ -193,7 +209,24 @@ export const searchPosts = async (req: Request, res: Response, next: NextFunctio
         'whereConditions or orderConditions is required, but it can be empty'
       );
     }
-    const { title, priceStart, priceEnd, provinceName, districtName, wardName, nearest } = whereConditions;
+    const {
+      title,
+      priceStart,
+      priceEnd,
+      provinceName,
+      districtName,
+      wardName,
+      nearest,
+      hasFurniture,
+      hasAirConditioner,
+      hasWashingMachine,
+      hasRefrigerator,
+      hasPrivateBathroom,
+      hasParking,
+      hasSecurity,
+      hasElevator,
+      allowPets
+    } = whereConditions;
     const { createdAt, price } = orderConditions;
     if (!type || Object.values(postType).includes(type as postType)) {
       throw new ApiError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
@@ -211,12 +244,6 @@ export const searchPosts = async (req: Request, res: Response, next: NextFunctio
         title: {
           operator: 'like',
           value: `%${title}%`
-        }
-      }),
-      ...(priceStart && {
-        priceStart: {
-          operator: 'between',
-          value: [priceStart, priceEnd || priceStart]
         }
       }),
       ...(provinceName && {
@@ -253,6 +280,66 @@ export const searchPosts = async (req: Request, res: Response, next: NextFunctio
         }),
       ...(nearest && {
         radius: nearest?.radius ? nearest?.radius : 50
+      }),
+      ...(priceStart && {
+        priceStart: {
+          operator: 'between',
+          value: [priceStart, priceEnd || priceStart]
+        }
+      }),
+      ...(hasFurniture && {
+        hasFurniture: {
+          operator: 'eq',
+          value: true
+        }
+      }),
+      ...(hasAirConditioner && {
+        hasAirConditioner: {
+          operator: 'eq',
+          value: true
+        }
+      }),
+      ...(hasWashingMachine && {
+        hasWashingMachine: {
+          operator: 'eq',
+          value: true
+        }
+      }),
+      ...(hasRefrigerator && {
+        hasRefrigerator: {
+          operator: 'eq',
+          value: true
+        }
+      }),
+      ...(hasPrivateBathroom && {
+        hasPrivateBathroom: {
+          operator: 'eq',
+          value: true
+        }
+      }),
+      ...(hasParking && {
+        hasParking: {
+          operator: 'eq',
+          value: true
+        }
+      }),
+      ...(hasSecurity && {
+        hasSecurity: {
+          operator: 'eq',
+          value: true
+        }
+      }),
+      ...(hasElevator && {
+        hasElevator: {
+          operator: 'eq',
+          value: true
+        }
+      }),
+      ...(allowPets && {
+        allowPets: {
+          operator: 'eq',
+          value: true
+        }
       })
     };
     const options: selectOptions<selectRentalPostByConditionType> = {
