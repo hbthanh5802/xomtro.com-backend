@@ -1,17 +1,28 @@
 import { insertAsset } from '@/services/asset.service';
 import { uploadImage } from '@/services/fileUpload.service';
 import { geocodingByDistanceMatrix, geocodingByGeocodeMap } from '@/services/location.service';
-import { insertPost, insertPostAssets, insertRentalPost } from '@/services/post.service';
+import {
+  insertPost,
+  insertPostAssets,
+  insertRentalPost,
+  selectFullPostDetailById,
+  selectPostById,
+  selectRentalPostByConditionType,
+  selectRentalPostByConditions
+} from '@/services/post.service';
+import { ConditionsType } from '@/types/drizzle.type';
 import {
   assetSchemaType,
   assetType,
   postAssetsSchemaType,
   postSchemaType,
+  postType,
   rentalPostSchemaType
 } from '@/types/schema.type';
 import ApiError from '@/utils/ApiError.helper';
 import { ApiResponse } from '@/utils/ApiResponse.helper';
 import { generateFileName } from '@/utils/file.helper';
+import { paginationHelper, selectOptions } from '@/utils/schema.helper';
 import { UploadApiResponse } from 'cloudinary';
 import { NextFunction, Request, Response } from 'express';
 import { ReasonPhrases, StatusCodes } from 'http-status-codes';
@@ -147,6 +158,131 @@ export const createRentalPost = async (req: Request, res: Response, next: NextFu
     }
 
     return new ApiResponse(StatusCodes.CREATED, ReasonPhrases.CREATED, { postId }).send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getPost = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { postId } = req.params;
+    if (!postId) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
+    }
+
+    const getPostResult = await selectPostById(Number(postId));
+    if (!getPostResult.length) {
+      return new ApiResponse(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND).send(res);
+    }
+
+    const selectResult = await selectFullPostDetailById(Number(postId), getPostResult[0].type);
+
+    return new ApiResponse(StatusCodes.OK, ReasonPhrases.OK, selectResult).send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const searchPosts = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { type } = req.params;
+    const { whereConditions, orderConditions, pagination } = req.body;
+    if (!whereConditions || !orderConditions) {
+      throw new ApiError(
+        StatusCodes.UNPROCESSABLE_ENTITY,
+        'whereConditions or orderConditions is required, but it can be empty'
+      );
+    }
+    const { title, priceStart, priceEnd, provinceName, districtName, wardName, nearest } = whereConditions;
+    const { createdAt, price } = orderConditions;
+    if (!type || Object.values(postType).includes(type as postType)) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
+    }
+
+    if (nearest && (!nearest?.longitude || !nearest?.latitude)) {
+      throw new ApiError(
+        StatusCodes.UNPROCESSABLE_ENTITY,
+        'Longitude and latitude are required when [nearest] param is provided'
+      );
+    }
+
+    const where: ConditionsType<selectRentalPostByConditionType> = {
+      ...(title && {
+        title: {
+          operator: 'like',
+          value: `%${title}%`
+        }
+      }),
+      ...(priceStart && {
+        priceStart: {
+          operator: 'between',
+          value: [priceStart, priceEnd || priceStart]
+        }
+      }),
+      ...(provinceName && {
+        addressProvince: {
+          operator: 'like',
+          value: `%${provinceName}%`
+        }
+      }),
+      ...(districtName && {
+        addressDistrict: {
+          operator: 'like',
+          value: `%${districtName}%`
+        }
+      }),
+      ...(wardName && {
+        addressWard: {
+          operator: 'like',
+          value: `%${wardName}%`
+        }
+      }),
+      ...(nearest &&
+        nearest?.longitude && {
+          addressLongitude: {
+            operator: 'eq',
+            value: nearest?.longitude
+          }
+        }),
+      ...(nearest &&
+        nearest?.latitude && {
+          addressLatitude: {
+            operator: 'eq',
+            value: nearest?.latitude
+          }
+        }),
+      ...(nearest && {
+        radius: nearest?.radius ? nearest?.radius : 50
+      })
+    };
+    const options: selectOptions<selectRentalPostByConditionType> = {
+      orderConditions: {
+        ...(createdAt && { createdAt }),
+        ...(price && { priceStart: price })
+      },
+      ...(pagination && {
+        pagination: {
+          page: pagination?.page,
+          pageSize: pagination?.pageSize
+        }
+      })
+    };
+
+    const totalResults = await selectRentalPostByConditions(where, {
+      ...options,
+      pagination: { page: 1, pageSize: 99999999 }
+    });
+
+    const results = await selectRentalPostByConditions(where, options);
+
+    return new ApiResponse(StatusCodes.OK, ReasonPhrases.OK, {
+      results,
+      pagination: paginationHelper({
+        total: totalResults.length,
+        page: pagination?.page,
+        pageSize: pagination?.pageSize
+      })
+    }).send(res);
   } catch (error) {
     next(error);
   }

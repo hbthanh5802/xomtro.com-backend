@@ -1,7 +1,9 @@
 import { Condition } from '@/types/drizzle.type';
 import {
   SQLWrapper,
+  asc,
   between,
+  desc,
   eq,
   gt,
   gte,
@@ -36,7 +38,6 @@ export type queryOptions<T> = {
   pageSize?: number;
 };
 
-// Function để xử lý một condition đơn
 export const processCondition = <T>(
   field: keyof T,
   condition: Condition<T, keyof T>,
@@ -76,4 +77,44 @@ export const processCondition = <T>(
     default:
       throw new Error(`Unsupported operator: ${operator}`);
   }
+};
+
+//
+export const processOrderCondition = <T>(
+  field: keyof T,
+  direction: 'asc' | 'desc',
+  table: Record<string, MySqlColumn>
+): SQLWrapper => {
+  const column = table[field as string];
+
+  switch (direction) {
+    case 'asc':
+      return asc(column);
+    case 'desc':
+      return desc(column);
+    default:
+      return asc(column);
+  }
+};
+
+export type orderConditionType<T> = {
+  [K in keyof T]?: 'asc' | 'desc';
+};
+
+export type selectOptions<T> = {
+  pagination?: { page: number; pageSize?: number };
+  orderConditions?: orderConditionType<T>;
+};
+
+export const paginationHelper = ({ total, page, pageSize }: { total: number; page?: number; pageSize?: number }) => {
+  const currentPage = page || 1;
+  const currentPageSize = pageSize || 10;
+  return {
+    totalCount: total,
+    totalPages: Math.ceil(total / currentPageSize),
+    currentPage: currentPage,
+    currentPageSize: currentPageSize,
+    canPrevious: currentPage > 1,
+    canNext: currentPage * currentPageSize < total
+  };
 };
