@@ -14,7 +14,12 @@ import ApiError from '@/utils/ApiError.helper';
 import { processCondition, processOrderCondition, selectOptions, withPagination } from '@/utils/schema.helper';
 import { SQLWrapper, and, asc, desc, eq, sql } from 'drizzle-orm';
 import { ReasonPhrases, StatusCodes } from 'http-status-codes';
-import { postAssetsSchemaType, postSchemaType, rentalPostSchemaType } from './../types/schema.type';
+import {
+  postAssetsSchemaType,
+  postSchemaType,
+  rentalPostSchemaType,
+  wantedPostSchemaType
+} from './../types/schema.type';
 
 // Type
 type PostType = typeof posts.$inferSelect;
@@ -49,6 +54,10 @@ export const insertPostAssets = async (payload: postAssetsSchemaType[] | postAss
 
 export const insertRentalPost = async (payload: rentalPostSchemaType) => {
   return db.insert(rentalPosts).values(payload).$returningId();
+};
+
+export const insertWantedPost = async (payload: wantedPostSchemaType) => {
+  return db.insert(wantedPosts).values(payload).$returningId();
 };
 
 // SELECT

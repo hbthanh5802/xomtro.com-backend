@@ -15,8 +15,16 @@ router.post(
   postController.createRentalPost
 );
 
-router.post('/search/:type', postController.searchPosts);
+router.post(
+  '/wanted',
+  authMiddleware.verifyRenter,
+  uploadMiddleware.array('assets'),
+  // validationAsync(insertRentalPostValidation),
+  postController.createWantedPost
+);
 
-router.get('/:postId', postController.getPost);
+router.post('/search/rental', postController.searchRentalPosts);
+
+router.get('/:postId', postController.getPostById);
 
 export default router;
