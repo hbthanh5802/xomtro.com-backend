@@ -7,6 +7,8 @@ import express from 'express';
 
 const router = express.Router();
 
+router.get('/:postId', postController.getPostById);
+
 router.post(
   '/rental',
   authMiddleware.verifyLandlord,
@@ -40,8 +42,13 @@ router.post(
 );
 
 router.post('/search/pass', postController.searchPassPosts);
+
 router.post('/search/:type', postController.searchPosts);
 
-router.get('/:postId', postController.getPostById);
+router.put('/:postId/status', authMiddleware.verifyUser, postController.hiddenPostById);
+
+router.delete('/:postId/assets', authMiddleware.verifyUser, postController.removePostAssets);
+
+router.delete('/:postId', authMiddleware.verifyUser, postController.removePostById);
 
 export default router;

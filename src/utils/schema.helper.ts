@@ -1,4 +1,5 @@
 import { Condition } from '@/types/drizzle.type';
+import { postType, userRole } from '@/types/schema.type';
 import {
   SQLWrapper,
   asc,
@@ -129,4 +130,14 @@ export const paginationHelper = ({ total, page, pageSize }: { total: number; pag
     canPrevious: currentPage > 1,
     canNext: currentPage * currentPageSize < total
   };
+};
+
+export const checkUserAndPostPermission = (role: string, type: string) => {
+  if (role === userRole.LANDLORD && type === postType.RENTAL) {
+    return true;
+  }
+  if (role === userRole.RENTER && [postType.JOIN, postType.PASS, postType.WANTED].includes(type as postType)) {
+    return true;
+  }
+  return false;
 };
