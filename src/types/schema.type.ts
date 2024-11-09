@@ -52,12 +52,11 @@ export enum timeUnit {
 
 export enum postStatus {
   ACTIVED = 'actived',
-  UNACTIVED = 'unactived',
-  REMOVED = 'removed'
+  UNACTIVED = 'unactived'
 }
 
 export enum postType {
-  RENT = 'rent',
+  RENTAL = 'rental',
   JOIN = 'join',
   WANTED = 'wanted',
   PASS = 'pass'
@@ -126,3 +125,4 @@ export type wantedPostSchemaType = typeof schema.wantedPosts.$inferInsert;
 export type joinPostSchemaType = typeof schema.joinPosts.$inferInsert;
 export type passPostSchemaType = typeof schema.passPosts.$inferInsert;
 export type postAssetsSchemaType = typeof schema.postAssets.$inferInsert;
+export type passPostItemSchemaType = typeof schema.passPostItems.$inferInsert;

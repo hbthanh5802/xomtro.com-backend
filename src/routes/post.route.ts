@@ -23,7 +23,24 @@ router.post(
   postController.createWantedPost
 );
 
-router.post('/search/rental', postController.searchRentalPosts);
+router.post(
+  '/join',
+  authMiddleware.verifyRenter,
+  uploadMiddleware.array('assets'),
+  // validationAsync(insertRentalPostValidation),
+  postController.createJoinPost
+);
+
+router.post(
+  '/pass',
+  authMiddleware.verifyRenter,
+  uploadMiddleware.array('assets'),
+  // validationAsync(insertRentalPostValidation),
+  postController.createPassPost
+);
+
+router.post('/search/pass', postController.searchPassPosts);
+router.post('/search/:type', postController.searchPosts);
 
 router.get('/:postId', postController.getPostById);
 
