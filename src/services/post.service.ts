@@ -15,6 +15,9 @@ import { processCondition, processOrderCondition, selectOptions, withPagination 
 import { SQLWrapper, and, asc, desc, eq, sql } from 'drizzle-orm';
 import { ReasonPhrases, StatusCodes } from 'http-status-codes';
 import {
+  joinPostSchemaType,
+  passPostItemSchemaType,
+  passPostSchemaType,
   postAssetsSchemaType,
   postSchemaType,
   rentalPostSchemaType,
@@ -33,11 +36,14 @@ type fullPostResponseType = {
   post: PostType;
   detail: RentalPostType | WantedPostType | JoinPostType | PassPostType;
   assets: AssetType[];
-  passPostItem?: PassPostItemType;
+  passItems?: PassPostItemType[];
   distance?: number;
 };
 
 export type selectRentalPostByConditionType = PostType & RentalPostType;
+export type selectWantedPostByConditionType = PostType & WantedPostType;
+export type selectJoinPostByConditionType = PostType & JoinPostType;
+export type selectPassPostByConditionType = PostType & PassPostType & PassPostItemType;
 
 // INSERT
 export const insertPost = async (payload: postSchemaType) => {
@@ -58,6 +64,22 @@ export const insertRentalPost = async (payload: rentalPostSchemaType) => {
 
 export const insertWantedPost = async (payload: wantedPostSchemaType) => {
   return db.insert(wantedPosts).values(payload).$returningId();
+};
+
+export const insertJoinPost = async (payload: joinPostSchemaType) => {
+  return db.insert(joinPosts).values(payload).$returningId();
+};
+
+export const insertPassPost = async (payload: passPostSchemaType) => {
+  return db.insert(passPosts).values(payload).$returningId();
+};
+
+export const insertPassPostItem = async (payload: passPostItemSchemaType[] | passPostItemSchemaType) => {
+  if (Array.isArray(payload)) {
+    return db.insert(passPostItems).values(payload).$returningId();
+  } else {
+    return db.insert(passPostItems).values(payload).$returningId();
+  }
 };
 
 // SELECT
@@ -94,7 +116,10 @@ export const selectFullPostDetailById = async (
         query.leftJoin(joinPosts, eq(joinPosts.postId, posts.id)).$dynamic();
         break;
       case 'pass':
-        query.leftJoin(passPosts, eq(passPosts.postId, posts.id)).$dynamic();
+        query
+          .leftJoin(passPosts, eq(passPosts.postId, posts.id))
+          .leftJoin(passPostItems, eq(posts.id, passPostItems.passPostId))
+          .$dynamic();
         break;
       default:
         break;
@@ -115,7 +140,7 @@ export const selectFullPostDetailById = async (
     const assets = rawData.map((row) => row.asset).filter((asset) => !!asset);
 
     let detail: fullPostResponseType['detail'];
-    let passPostItem: PassPostItemType | undefined;
+    let passItems: fullPostResponseType['passItems'];
 
     switch (postType) {
       case 'rental':
@@ -129,7 +154,7 @@ export const selectFullPostDetailById = async (
         break;
       case 'pass':
         detail = rawData[0].passPost! as PassPostType;
-        passPostItem = rawData[0].passPostItem! as PassPostItemType;
+        passItems = rawData.map((row) => row.passPostItem!).filter((passItem) => !!passItem) as PassPostItemType[];
         break;
       default:
         throw new Error('Unsupported post type');
@@ -140,7 +165,7 @@ export const selectFullPostDetailById = async (
         post,
         detail,
         assets,
-        ...(post.type === 'pass' ? { passPostItem } : {})
+        ...(postType === 'pass' ? { passItems } : {})
       }
     ];
 
@@ -204,8 +229,6 @@ export const selectRentalPostByConditions = async <T extends selectRentalPostByC
     const pagination = options?.pagination;
     query = withPagination(query, pagination?.page, pagination?.pageSize);
 
-    console.log('QUERY ===>', query.toSQL());
-
     const rawData = await query;
     //
     const formattedResponse: fullPostResponseType[] = rawData.reduce((acc, item) => {
@@ -219,6 +242,244 @@ export const selectRentalPostByConditions = async <T extends selectRentalPostByC
         };
         acc.push(postResponseItem);
       }
+      if (item.asset) postResponseItem.assets.push(item.asset);
+
+      return acc;
+    }, [] as fullPostResponseType[]);
+
+    return formattedResponse;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const selectJoinPostByConditions = async <T extends selectJoinPostByConditionType & { radius?: number }>(
+  conditions?: ConditionsType<T>,
+  options?: selectOptions<selectJoinPostByConditionType>
+) => {
+  try {
+    let whereClause: (SQLWrapper | undefined)[] = [];
+    if (conditions) {
+      whereClause = Object.entries(conditions).map(([field, condition]) => {
+        if (field !== 'addressLongitude' && field !== 'addressLatitude' && field !== 'radius') {
+          return processCondition(field, condition, { ...posts, ...joinPosts } as any);
+        }
+      });
+    }
+
+    const hasLocationFilter = Boolean(
+      conditions?.addressLongitude && conditions?.addressLatitude && conditions?.radius
+    );
+
+    if (hasLocationFilter) {
+      whereClause.push(
+        sql<number>`calculate_distance(${posts.addressLatitude},${posts.addressLongitude},${conditions?.addressLatitude?.value},${conditions?.addressLongitude?.value}) <= ${conditions?.radius}`
+      );
+    }
+
+    let query = db
+      .select({
+        post: posts,
+        asset: assetModel,
+        joinPost: joinPosts,
+        ...(hasLocationFilter && {
+          distance: sql<number>`calculate_distance(${posts.addressLatitude},${posts.addressLongitude},${conditions?.addressLatitude?.value},${conditions?.addressLongitude?.value})`
+        })
+      })
+      .from(posts)
+      .leftJoin(postAssets, eq(postAssets.postId, posts.id))
+      .leftJoin(assetModel, eq(assetModel.id, postAssets.assetId))
+      .leftJoin(joinPosts, eq(joinPosts.postId, posts.id))
+      .$dynamic();
+
+    if (whereClause?.length) {
+      query.where(and(...whereClause)).$dynamic();
+    }
+
+    if (options?.orderConditions) {
+      const { orderConditions } = options;
+      let orderClause = Object.entries(orderConditions).map(([field, direction]) => {
+        return processOrderCondition(field, direction, { ...posts, ...joinPosts } as any);
+      });
+      query = query.orderBy(...(orderClause as any));
+    }
+
+    const pagination = options?.pagination;
+    query = withPagination(query, pagination?.page, pagination?.pageSize);
+
+    const rawData = await query;
+    //
+    const formattedResponse: fullPostResponseType[] = rawData.reduce((acc, item) => {
+      let postResponseItem = acc.find((p) => p.post.id === item.post.id);
+      if (!postResponseItem) {
+        postResponseItem = {
+          assets: [],
+          detail: item.joinPost!,
+          post: item.post,
+          distance: item.distance
+        };
+        acc.push(postResponseItem);
+      }
+      if (item.asset) postResponseItem.assets.push(item.asset);
+
+      return acc;
+    }, [] as fullPostResponseType[]);
+
+    return formattedResponse;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const selectWantedPostByConditions = async <T extends selectWantedPostByConditionType & { radius?: number }>(
+  conditions?: ConditionsType<T>,
+  options?: selectOptions<selectWantedPostByConditionType>
+) => {
+  try {
+    let whereClause: (SQLWrapper | undefined)[] = [];
+    if (conditions) {
+      whereClause = Object.entries(conditions).map(([field, condition]) => {
+        if (field !== 'addressLongitude' && field !== 'addressLatitude' && field !== 'radius') {
+          return processCondition(field, condition, { ...posts, ...wantedPosts } as any);
+        }
+      });
+    }
+
+    const hasLocationFilter = Boolean(
+      conditions?.addressLongitude && conditions?.addressLatitude && conditions?.radius
+    );
+
+    if (hasLocationFilter) {
+      whereClause.push(
+        sql<number>`calculate_distance(${posts.addressLatitude},${posts.addressLongitude},${conditions?.addressLatitude?.value},${conditions?.addressLongitude?.value}) <= ${conditions?.radius}`
+      );
+    }
+
+    let query = db
+      .select({
+        post: posts,
+        asset: assetModel,
+        wantedPost: wantedPosts,
+        ...(hasLocationFilter && {
+          distance: sql<number>`calculate_distance(${posts.addressLatitude},${posts.addressLongitude},${conditions?.addressLatitude?.value},${conditions?.addressLongitude?.value})`
+        })
+      })
+      .from(posts)
+      .leftJoin(postAssets, eq(postAssets.postId, posts.id))
+      .leftJoin(assetModel, eq(assetModel.id, postAssets.assetId))
+      .leftJoin(wantedPosts, eq(wantedPosts.postId, posts.id))
+      .$dynamic();
+
+    if (whereClause?.length) {
+      query.where(and(...whereClause)).$dynamic();
+    }
+
+    if (options?.orderConditions) {
+      const { orderConditions } = options;
+      let orderClause = Object.entries(orderConditions).map(([field, direction]) => {
+        return processOrderCondition(field, direction, { ...posts, ...wantedPosts } as any);
+      });
+      query = query.orderBy(...(orderClause as any));
+    }
+
+    const pagination = options?.pagination;
+    query = withPagination(query, pagination?.page, pagination?.pageSize);
+
+    const rawData = await query;
+    //
+    const formattedResponse: fullPostResponseType[] = rawData.reduce((acc, item) => {
+      let postResponseItem = acc.find((p) => p.post.id === item.post.id);
+      if (!postResponseItem) {
+        postResponseItem = {
+          assets: [],
+          detail: item.wantedPost!,
+          post: item.post,
+          distance: item.distance
+        };
+        acc.push(postResponseItem);
+      }
+      if (item.asset) postResponseItem.assets.push(item.asset);
+
+      return acc;
+    }, [] as fullPostResponseType[]);
+
+    return formattedResponse;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const selectPassPostByConditions = async <T extends selectPassPostByConditionType & { radius?: number }>(
+  conditions?: ConditionsType<T>,
+  options?: selectOptions<selectPassPostByConditionType>
+) => {
+  try {
+    let whereClause: (SQLWrapper | undefined)[] = [];
+    if (conditions) {
+      whereClause = Object.entries(conditions).map(([field, condition]) => {
+        if (field !== 'addressLongitude' && field !== 'addressLatitude' && field !== 'radius') {
+          return processCondition(field, condition, { ...posts, ...passPosts, ...passPostItems } as any);
+        }
+      });
+    }
+
+    const hasLocationFilter = Boolean(
+      conditions?.addressLongitude && conditions?.addressLatitude && conditions?.radius
+    );
+
+    if (hasLocationFilter) {
+      whereClause.push(
+        sql<number>`calculate_distance(${posts.addressLatitude},${posts.addressLongitude},${conditions?.addressLatitude?.value},${conditions?.addressLongitude?.value}) <= ${conditions?.radius}`
+      );
+    }
+
+    let query = db
+      .select({
+        post: posts,
+        asset: assetModel,
+        passPost: passPosts,
+        passItem: passPostItems,
+        ...(hasLocationFilter && {
+          distance: sql<number>`calculate_distance(${posts.addressLatitude},${posts.addressLongitude},${conditions?.addressLatitude?.value},${conditions?.addressLongitude?.value})`
+        })
+      })
+      .from(posts)
+      .leftJoin(postAssets, eq(postAssets.postId, posts.id))
+      .leftJoin(assetModel, eq(assetModel.id, postAssets.assetId))
+      .leftJoin(passPosts, eq(passPosts.postId, posts.id))
+      .leftJoin(passPostItems, eq(passPostItems.passPostId, posts.id))
+      .$dynamic();
+
+    if (whereClause?.length) {
+      query.where(and(...whereClause)).$dynamic();
+    }
+
+    if (options?.orderConditions) {
+      const { orderConditions } = options;
+      let orderClause = Object.entries(orderConditions).map(([field, direction]) => {
+        return processOrderCondition(field, direction, { ...posts, ...passPosts, ...passPostItems } as any);
+      });
+      query = query.orderBy(...(orderClause as any));
+    }
+
+    const pagination = options?.pagination;
+    query = withPagination(query, pagination?.page, pagination?.pageSize);
+
+    const rawData = await query;
+    //
+    const formattedResponse: fullPostResponseType[] = rawData.reduce((acc, item) => {
+      let postResponseItem = acc.find((p) => p.post.id === item.post.id);
+      if (!postResponseItem) {
+        postResponseItem = {
+          assets: [],
+          post: item.post,
+          detail: item.passPost!,
+          passItems: [],
+          distance: item.distance
+        };
+        acc.push(postResponseItem);
+      }
+      if (item.passItem) postResponseItem.passItems?.push(item.passItem);
       if (item.asset) postResponseItem.assets.push(item.asset);
 
       return acc;
