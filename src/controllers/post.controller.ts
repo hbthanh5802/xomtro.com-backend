@@ -2,6 +2,8 @@ import { insertAsset } from '@/services/asset.service';
 import { uploadImage } from '@/services/fileUpload.service';
 import { geocodingByDistanceMatrix, geocodingByGeocodeMap } from '@/services/location.service';
 import {
+  deletePostAssets,
+  deletePostById,
   insertJoinPost,
   insertPassPost,
   insertPassPostItem,
@@ -18,7 +20,8 @@ import {
   selectRentalPostByConditionType,
   selectRentalPostByConditions,
   selectWantedPostByConditionType,
-  selectWantedPostByConditions
+  selectWantedPostByConditions,
+  updatePostById
 } from '@/services/post.service';
 import { ConditionsType } from '@/types/drizzle.type';
 import {
@@ -38,7 +41,7 @@ import ApiError from '@/utils/ApiError.helper';
 import { ApiResponse } from '@/utils/ApiResponse.helper';
 import { generateSlug } from '@/utils/constants.helper';
 import { generateFileName } from '@/utils/file.helper';
-import { paginationHelper, selectOptions } from '@/utils/schema.helper';
+import { checkUserAndPostPermission, paginationHelper, selectOptions } from '@/utils/schema.helper';
 import { timeInVietNam } from '@/utils/time.helper';
 import { UploadApiResponse } from 'cloudinary';
 import { NextFunction, Request, Response } from 'express';
@@ -889,6 +892,112 @@ export const searchPassPosts = async (req: Request, res: Response, next: NextFun
         pageSize: pagination?.pageSize
       })
     }).send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const hiddenPostById = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const currentUser = req.currentUser;
+    const { users_detail } = currentUser!;
+    const postId = req.params.postId;
+
+    if (!postId) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
+    }
+
+    const existingPostResult = await selectPostById(Number(postId));
+    if (!existingPostResult.length) {
+      throw new ApiError(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND);
+    }
+
+    const post = existingPostResult[0];
+    if (post.ownerId !== users_detail.userId) {
+      throw new ApiError(StatusCodes.FORBIDDEN, ReasonPhrases.FORBIDDEN);
+    }
+
+    if (!checkUserAndPostPermission(users_detail.role as string, post.type)) {
+      throw new ApiError(StatusCodes.FORBIDDEN, ReasonPhrases.FORBIDDEN);
+    }
+
+    const willUpdateStatus = post.status === 'actived' ? postStatus.UNACTIVED : postStatus.ACTIVED;
+    await updatePostById(post.id, { status: willUpdateStatus });
+
+    return new ApiResponse(StatusCodes.OK, 'Change post status successfully!', { status: willUpdateStatus }).send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const removePostById = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const currentUser = req.currentUser;
+    const { users_detail } = currentUser!;
+    const postId = req.params.postId;
+
+    if (!postId) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
+    }
+
+    const existingPostResult = await selectPostById(Number(postId));
+    if (!existingPostResult.length) {
+      throw new ApiError(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND);
+    }
+
+    const post = existingPostResult[0];
+    if (post.ownerId !== users_detail.userId) {
+      throw new ApiError(StatusCodes.FORBIDDEN, ReasonPhrases.FORBIDDEN);
+    }
+
+    if (!checkUserAndPostPermission(users_detail.role as string, post.type)) {
+      throw new ApiError(StatusCodes.FORBIDDEN, ReasonPhrases.FORBIDDEN);
+    }
+
+    await deletePostById(Number(postId));
+
+    return new ApiResponse(StatusCodes.OK, 'Delete post successfully!', { postId: postId }).send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const removePostAssets = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const currentUser = req.currentUser;
+    const { users_detail } = currentUser!;
+    const postId = req.params.postId;
+    const assetIds = req.query.assetIds;
+
+    if (!postId) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
+    }
+
+    const existingPostResult = await selectPostById(Number(postId));
+    if (!existingPostResult.length) {
+      throw new ApiError(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND);
+    }
+
+    const post = existingPostResult[0];
+    if (post.ownerId !== users_detail.userId) {
+      throw new ApiError(StatusCodes.FORBIDDEN, ReasonPhrases.FORBIDDEN);
+    }
+
+    if (!checkUserAndPostPermission(users_detail.role as string, post.type)) {
+      throw new ApiError(StatusCodes.FORBIDDEN, ReasonPhrases.FORBIDDEN);
+    }
+
+    let assetIdsPayload: number[] | number;
+    if (Array.isArray(assetIds)) {
+      assetIdsPayload = assetIds.map((id) => Number(id)).filter((id) => typeof id === 'number' && !isNaN(id));
+    } else {
+      assetIdsPayload = Number(assetIds);
+    }
+    await deletePostAssets(Number(postId), assetIdsPayload);
+
+    return new ApiResponse(StatusCodes.OK, 'Delete post assets successfully', { removedIds: assetIdsPayload }).send(
+      res
+    );
   } catch (error) {
     next(error);
   }

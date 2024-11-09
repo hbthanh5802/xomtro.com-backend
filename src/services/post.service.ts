@@ -1,6 +1,7 @@
 import { db } from '@/configs/database.config';
 import {
   assets as assetModel,
+  assets,
   joinPosts,
   passPostItems,
   passPosts,
@@ -12,7 +13,7 @@ import {
 import { ConditionsType } from '@/types/drizzle.type';
 import ApiError from '@/utils/ApiError.helper';
 import { processCondition, processOrderCondition, selectOptions, withPagination } from '@/utils/schema.helper';
-import { SQLWrapper, and, asc, desc, eq, sql } from 'drizzle-orm';
+import { SQLWrapper, and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
 import { ReasonPhrases, StatusCodes } from 'http-status-codes';
 import {
   joinPostSchemaType,
@@ -488,5 +489,43 @@ export const selectPassPostByConditions = async <T extends selectPassPostByCondi
     return formattedResponse;
   } catch (error) {
     throw error;
+  }
+};
+
+// UPDATE
+export const updatePostById = async (postId: number, payload: Partial<postSchemaType>) => {
+  return db.update(posts).set(payload).where(eq(posts.id, postId));
+};
+
+export const updateRentalPostByPostId = async (postId: number, payload: Partial<rentalPostSchemaType>) => {
+  return db.update(rentalPosts).set(payload).where(eq(rentalPosts.postId, postId));
+};
+
+export const updateWantedPostByPostId = async (postId: number, payload: Partial<wantedPostSchemaType>) => {
+  return db.update(wantedPosts).set(payload).where(eq(wantedPosts.postId, postId));
+};
+
+export const updateJoinPostByPostId = async (postId: number, payload: Partial<joinPostSchemaType>) => {
+  return db.update(joinPosts).set(payload).where(eq(joinPosts.postId, postId));
+};
+
+export const updatePassPostByPostId = async (postId: number, payload: Partial<passPostSchemaType>) => {
+  return db.update(passPosts).set(payload).where(eq(passPosts.postId, postId));
+};
+
+export const updatePassPostItemById = async (passItemId: number, payload: Partial<passPostItemSchemaType>) => {
+  return db.update(passPostItems).set(payload).where(eq(passPostItems.id, passItemId));
+};
+
+// DELETE
+export const deletePostById = async (postId: number) => {
+  return db.delete(posts).where(eq(posts.id, postId));
+};
+
+export const deletePostAssets = async (postId: number, assetIds: number[] | number) => {
+  if (Array.isArray(assetIds)) {
+    return db.delete(assets).where(and(inArray(assets.id, assetIds), eq(assets.postId, postId)));
+  } else {
+    return db.delete(assets).where(and(eq(assets.id, assetIds), eq(assets.postId, postId)));
   }
 };
