@@ -126,6 +126,10 @@ export const deleteResource = async (name: string, type: 'image' | 'video') => {
   return cloudinary.uploader.destroy(name, { resource_type: type });
 };
 
+export const deleteManyResources = async (name: string[], type: 'image' | 'video') => {
+  return cloudinary.api.delete_resources(name, { resource_type: type });
+};
+
 export const uploadImageFromUrl = async (url: string, options: uploadOptions) => {
   return new Promise<UploadApiResponse>((resolve, reject) => {
     const uniqueFileName = generateFileName(options.publicIdPrefix);

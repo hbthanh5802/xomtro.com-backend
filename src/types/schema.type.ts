@@ -38,7 +38,7 @@ export enum areaUnit {
 export enum propertyStatus {
   NEW = 'new',
   GOOD = 'good',
-  OLD = 'OLD'
+  OLD = 'old'
 }
 
 export enum timeUnit {
@@ -85,7 +85,7 @@ export enum rentalMinLeaseUnit {
   MONTH = 'month'
 }
 
-export enum passItemStatus {
+export enum passItemStatusType {
   NEW = 'new',
   USED = 'used'
 }

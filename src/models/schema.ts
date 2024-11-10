@@ -158,6 +158,7 @@ export const posts = mysqlTable('posts', {
   status: mysqlEnum(['actived', 'unactived']).default('actived'),
   type: mysqlEnum(['rental', 'pass', 'join', 'wanted']).notNull(),
   note: text(),
+  viewedCount: int('viewed_count').default(0),
   addressProvince: varchar('address_province', { length: 255 }).notNull(),
   addressDistrict: varchar('address_district', { length: 255 }).notNull(),
   addressDetail: varchar('address_detail', { length: 255 }),
@@ -263,8 +264,8 @@ export const passPostItems = mysqlTable('pass_post_items', {
     }),
   passItemName: varchar('pass_item_name', { length: 255 }).notNull(),
   passItemNameSlug: varchar('pass_item_name_slug', { length: 255 }),
-  passPrice: int('pass_price').notNull(),
-  status: mysqlEnum(['new', 'used'])
+  passItemPrice: int('pass_item_price').notNull(),
+  passItemStatus: mysqlEnum('pass_item_status', ['new', 'used'])
 });
 
 export const userPostReactions = mysqlTable(
