@@ -1,6 +1,7 @@
 export const WHITELIST_DOMAIN = ['http://localhost:4444'];
 
 export const generateSlug = (str: string) => {
+  if (!str) return '';
   // Transform to lowercase
   str = str.toLowerCase();
 
@@ -29,4 +30,10 @@ export const generateSlug = (str: string) => {
   str = str.replace(/-+$/g, '');
 
   return str;
+};
+
+export const cleanObject = (obj: Record<string, any>) => {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([_, value]) => value != null && value !== '' && !Number.isNaN(value))
+  );
 };

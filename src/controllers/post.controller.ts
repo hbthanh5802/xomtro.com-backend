@@ -1,7 +1,8 @@
 import { insertAsset } from '@/services/asset.service';
-import { uploadImage } from '@/services/fileUpload.service';
+import { deleteManyResources, uploadImage } from '@/services/fileUpload.service';
 import { geocodingByDistanceMatrix, geocodingByGeocodeMap } from '@/services/location.service';
 import {
+  deleteManyPassPostItems,
   deletePostAssets,
   deletePostById,
   insertJoinPost,
@@ -16,18 +17,26 @@ import {
   selectJoinPostByConditions,
   selectPassPostByConditionType,
   selectPassPostByConditions,
+  selectPassPostItemsByPostId,
+  selectPostAssetsByPostId,
   selectPostById,
   selectRentalPostByConditionType,
   selectRentalPostByConditions,
   selectWantedPostByConditionType,
   selectWantedPostByConditions,
-  updatePostById
+  updateJoinPostByPostId,
+  updatePassPostByPostId,
+  updatePassPostItemById,
+  updatePostById,
+  updateRentalPostByPostId,
+  updateWantedPostByPostId
 } from '@/services/post.service';
 import { ConditionsType } from '@/types/drizzle.type';
 import {
   assetSchemaType,
   assetType,
   joinPostSchemaType,
+  passItemStatusType,
   passPostItemSchemaType,
   passPostSchemaType,
   postAssetsSchemaType,
@@ -39,8 +48,7 @@ import {
 } from '@/types/schema.type';
 import ApiError from '@/utils/ApiError.helper';
 import { ApiResponse } from '@/utils/ApiResponse.helper';
-import { generateSlug } from '@/utils/constants.helper';
-import { generateFileName } from '@/utils/file.helper';
+import { cleanObject, generateSlug } from '@/utils/constants.helper';
 import { checkUserAndPostPermission, paginationHelper, selectOptions } from '@/utils/schema.helper';
 import { timeInVietNam } from '@/utils/time.helper';
 import { UploadApiResponse } from 'cloudinary';
@@ -92,6 +100,7 @@ export const insertPostAssetsHandler = async (
         url: url,
         name: public_id,
         format,
+        folder: 'posts',
         type: resource_type as assetType,
         tags: JSON.stringify(['post'])
       };
@@ -165,7 +174,7 @@ export const createRentalPost = async (req: Request, res: Response, next: NextFu
       expirationAfter,
       expirationAfterUnit
     };
-    const insertPostResult = await insertPost(insertPostPayload);
+    const insertPostResult = await insertPost(cleanObject(insertPostPayload) as postSchemaType);
     const { id: postId } = insertPostResult[0];
 
     const insertRentalPostPayload: rentalPostSchemaType = {
@@ -187,7 +196,7 @@ export const createRentalPost = async (req: Request, res: Response, next: NextFu
       hasElevator: !!Number(hasElevator),
       allowPets: !!Number(allowPets)
     };
-    await insertRentalPost(insertRentalPostPayload);
+    await insertRentalPost(cleanObject(insertRentalPostPayload) as rentalPostSchemaType);
 
     if (req.files?.length) {
       const uploadImageResult = await uploadPostImageHandler(req);
@@ -218,8 +227,6 @@ export const createWantedPost = async (req: Request, res: Response, next: NextFu
       addressLongitude,
       addressLatitude,
       note,
-      totalArea,
-      totalAreaUnit,
       priceStart,
       priceEnd,
       priceUnit,
@@ -259,7 +266,7 @@ export const createWantedPost = async (req: Request, res: Response, next: NextFu
       expirationAfter,
       expirationAfterUnit
     };
-    const insertPostResult = await insertPost(insertPostPayload);
+    const insertPostResult = await insertPost(cleanObject(insertPostPayload) as postSchemaType);
     const { id: postId } = insertPostResult[0];
 
     if (isNaN(Date.parse(moveInDate))) {
@@ -282,7 +289,7 @@ export const createWantedPost = async (req: Request, res: Response, next: NextFu
       hasElevator: !!Number(hasElevator),
       allowPets: !!Number(allowPets)
     };
-    await insertWantedPost(insertWantedPostPayload);
+    await insertWantedPost(cleanObject(insertWantedPostPayload) as wantedPostSchemaType);
 
     if (req.files?.length) {
       const uploadImageResult = await uploadPostImageHandler(req);
@@ -343,6 +350,7 @@ export const createJoinPost = async (req: Request, res: Response, next: NextFunc
       ownerId: users.id,
       type: 'join',
       title,
+      titleSlug: generateSlug(title),
       note,
       description,
       addressProvince,
@@ -354,12 +362,13 @@ export const createJoinPost = async (req: Request, res: Response, next: NextFunc
       expirationAfter,
       expirationAfterUnit
     };
-    const insertPostResult = await insertPost(insertPostPayload);
-    const { id: postId } = insertPostResult[0];
 
     if (isNaN(Date.parse(moveInDate))) {
       throw new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, 'moveInDate value is invalid');
     }
+
+    const insertPostResult = await insertPost(insertPostPayload);
+    const { id: postId } = insertPostResult[0];
 
     const insertWantedPostPayload: joinPostSchemaType = {
       postId,
@@ -379,7 +388,8 @@ export const createJoinPost = async (req: Request, res: Response, next: NextFunc
       hasElevator: !!Number(hasElevator),
       allowPets: !!Number(allowPets)
     };
-    await insertJoinPost(insertWantedPostPayload);
+
+    await insertJoinPost(cleanObject(insertWantedPostPayload) as joinPostSchemaType);
 
     if (req.files?.length) {
       const uploadImageResult = await uploadPostImageHandler(req);
@@ -427,7 +437,7 @@ export const createPassPost = async (req: Request, res: Response, next: NextFunc
       throw new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, 'passItems can not be empty');
     }
 
-    const passItemsPrice = passItems.map((item) => item?.passPrice as number);
+    const passItemsPrice = passItems.map((item) => item.passItemPrice as number);
 
     const insertPostPayload: postSchemaType = {
       ownerId: users.id,
@@ -459,13 +469,13 @@ export const createPassPost = async (req: Request, res: Response, next: NextFunc
     await insertPassPost(insertPassPostPayload);
 
     const insertPassPostItemsPayload: passPostItemSchemaType[] = passItems.map((item) => {
-      const { name, passPrice, status } = item;
+      const { passItemName, passItemPrice, passItemStatus } = item;
       return {
         passPostId: postId,
-        status,
-        passPrice,
-        passItemName: name,
-        passItemNameSlug: generateSlug(name)
+        passItemStatus,
+        passItemPrice,
+        passItemName,
+        passItemNameSlug: generateSlug(passItemName)
       };
     });
     await insertPassPostItem(insertPassPostItemsPayload);
@@ -768,6 +778,7 @@ export const searchPassPosts = async (req: Request, res: Response, next: NextFun
       title,
       status,
       passItemName,
+      passItemStatus,
       priceStart,
       priceEnd,
       provinceName,
@@ -781,6 +792,10 @@ export const searchPassPosts = async (req: Request, res: Response, next: NextFun
 
     if (status && !Object.values(status).includes(status as postStatus)) {
       throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid post status parameter');
+    }
+
+    if (passItemStatus && !Object.values(passItemStatusType).includes(passItemStatus as passItemStatusType)) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid passItemStatus parameter');
     }
 
     if (nearest && (!nearest?.longitude || !nearest?.latitude)) {
@@ -815,6 +830,12 @@ export const searchPassPosts = async (req: Request, res: Response, next: NextFun
         passItemNameSlug: {
           operator: 'like',
           value: `%${generateSlug(passItemName)}%`
+        }
+      }),
+      ...(passItemStatus && {
+        passItemStatus: {
+          operator: 'eq',
+          value: passItemStatus
         }
       }),
       ...(provinceName && {
@@ -954,9 +975,14 @@ export const removePostById = async (req: Request, res: Response, next: NextFunc
       throw new ApiError(StatusCodes.FORBIDDEN, ReasonPhrases.FORBIDDEN);
     }
 
-    await deletePostById(Number(postId));
+    const postAssetsResult = (await selectPostAssetsByPostId(post.id)).map((postAsset) => postAsset.name);
 
-    return new ApiResponse(StatusCodes.OK, 'Delete post successfully!', { postId: postId }).send(res);
+    await Promise.allSettled([
+      deleteManyResources(postAssetsResult as string[], 'image'),
+      deletePostById(Number(postId))
+    ]);
+
+    return new ApiResponse(StatusCodes.OK, 'Delete post successfully!', { removedPostId: post.id }).send(res);
   } catch (error) {
     next(error);
   }
@@ -987,17 +1013,610 @@ export const removePostAssets = async (req: Request, res: Response, next: NextFu
       throw new ApiError(StatusCodes.FORBIDDEN, ReasonPhrases.FORBIDDEN);
     }
 
-    let assetIdsPayload: number[] | number;
-    if (Array.isArray(assetIds)) {
-      assetIdsPayload = assetIds.map((id) => Number(id)).filter((id) => typeof id === 'number' && !isNaN(id));
-    } else {
-      assetIdsPayload = Number(assetIds);
+    const postAssetsResult = await selectPostAssetsByPostId(post.id);
+    if (!postAssetsResult.length) {
+      throw new ApiError(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND);
     }
-    await deletePostAssets(Number(postId), assetIdsPayload);
+    const postAssetIds = postAssetsResult.map((postAsset) => postAsset.id!);
 
-    return new ApiResponse(StatusCodes.OK, 'Delete post assets successfully', { removedIds: assetIdsPayload }).send(
-      res
-    );
+    let removeAssetIds: number[];
+    if (Array.isArray(assetIds)) {
+      removeAssetIds = assetIds.map((id) => Number(id)).filter((id) => typeof id === 'number' && !isNaN(id));
+    } else {
+      removeAssetIds = [Number(assetIds)];
+    }
+
+    const willRemoveIds = postAssetIds.filter((id) => removeAssetIds.includes(id));
+    const willRemoveAssetNames = postAssetsResult
+      .filter((postAsset) => willRemoveIds.includes(postAsset.id!))
+      .map((postAsset) => postAsset.name);
+
+    await Promise.allSettled([
+      deleteManyResources(willRemoveAssetNames as string[], 'image'),
+      deletePostAssets(post.id, willRemoveIds)
+    ]);
+
+    return new ApiResponse(StatusCodes.OK, 'Delete post assets successfully', {
+      removedIds: willRemoveIds,
+      removedAssetNames: willRemoveAssetNames
+    }).send(res);
+  } catch (error) {
+    console.log(error);
+    next(error);
+  }
+};
+
+export const updateRentalPost = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    let {
+      title,
+      description,
+      addressProvince,
+      addressDistrict,
+      addressWard,
+      addressDetail,
+      expirationAfter,
+      expirationAfterUnit,
+      addressLongitude,
+      addressLatitude,
+      note,
+      totalArea,
+      totalAreaUnit,
+      priceStart,
+      priceEnd,
+      priceUnit,
+      minLeaseTerm,
+      minLeaseTermUnit,
+      hasFurniture,
+      hasAirConditioner,
+      hasWashingMachine,
+      hasRefrigerator,
+      hasPrivateBathroom,
+      hasParking,
+      hasSecurity,
+      hasElevator,
+      allowPets
+    } = req.body;
+    const currentUser = req.currentUser;
+    const { users_detail } = currentUser!;
+    const postId = req.params.postId;
+
+    if (!postId) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
+    }
+
+    const existingPostResult = await selectPostById(Number(postId));
+    if (!existingPostResult.length) {
+      throw new ApiError(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND);
+    }
+
+    const post = existingPostResult[0];
+    if (post.ownerId !== users_detail.userId) {
+      throw new ApiError(StatusCodes.FORBIDDEN, ReasonPhrases.FORBIDDEN);
+    }
+
+    if (!checkUserAndPostPermission(users_detail.role as string, post.type)) {
+      throw new ApiError(StatusCodes.FORBIDDEN, ReasonPhrases.FORBIDDEN);
+    }
+
+    if (!addressLatitude || !addressLongitude) {
+      const address = `${addressWard} ${addressDistrict} ${addressProvince}`;
+      const getGeoCodingResult = await geocodingByGeocodeMap(address);
+      addressLatitude = getGeoCodingResult.latitude;
+      addressLongitude = getGeoCodingResult.longitude;
+    }
+
+    const updatePostPayload: Partial<postSchemaType> = {
+      title,
+      titleSlug: generateSlug(title),
+      note,
+      description,
+      addressProvince,
+      addressDistrict,
+      addressWard,
+      addressDetail,
+      addressLongitude,
+      addressLatitude,
+      expirationAfter,
+      expirationAfterUnit
+    };
+    const updatePostDetailPayload: Partial<rentalPostSchemaType> = {
+      priceStart,
+      priceEnd,
+      priceUnit,
+      minLeaseTerm,
+      minLeaseTermUnit,
+      totalArea: Number(totalArea),
+      totalAreaUnit,
+      hasFurniture: !!Number(hasFurniture),
+      hasAirConditioner: !!Number(hasAirConditioner),
+      hasWashingMachine: !!Number(hasWashingMachine),
+      hasRefrigerator: !!Number(hasRefrigerator),
+      hasPrivateBathroom: !!Number(hasPrivateBathroom),
+      hasParking: !!Number(hasParking),
+      hasSecurity: !!Number(hasSecurity),
+      hasElevator: !!Number(hasElevator),
+      allowPets: !!Number(allowPets)
+    };
+    await Promise.all([
+      updatePostById(post.id, cleanObject(updatePostPayload)),
+      updateRentalPostByPostId(post.id, cleanObject(updatePostDetailPayload))
+    ]);
+
+    if (req.files?.length) {
+      const uploadImageResult = await uploadPostImageHandler(req);
+      if (uploadImageResult.success.length) {
+        await insertPostAssetsHandler(uploadImageResult.success, {
+          userId: users_detail.userId!,
+          postId: post.id
+        });
+      } else {
+        throw new ApiResponse(StatusCodes.BAD_REQUEST, 'Failed to upload!', uploadImageResult).send(res);
+      }
+    }
+
+    const updatedPostResult = await selectFullPostDetailById(post.id, post.type);
+
+    return new ApiResponse(StatusCodes.OK, 'Updated post successfully!', updatedPostResult).send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateWantedPost = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    let {
+      title,
+      description,
+      addressProvince,
+      addressDistrict,
+      addressWard,
+      addressDetail,
+      moveInDate,
+      expirationAfter,
+      expirationAfterUnit,
+      addressLongitude,
+      addressLatitude,
+      note,
+      totalArea,
+      totalAreaUnit,
+      priceStart,
+      priceEnd,
+      priceUnit,
+      hasFurniture,
+      hasAirConditioner,
+      hasWashingMachine,
+      hasRefrigerator,
+      hasPrivateBathroom,
+      hasParking,
+      hasSecurity,
+      hasElevator,
+      allowPets
+    } = req.body;
+    const currentUser = req.currentUser;
+    const { users_detail } = currentUser!;
+    const postId = req.params.postId;
+
+    if (!postId) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
+    }
+
+    if (isNaN(Date.parse(moveInDate))) {
+      throw new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, 'moveInDate value is invalid');
+    }
+
+    const existingPostResult = await selectPostById(Number(postId));
+    if (!existingPostResult.length) {
+      throw new ApiError(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND);
+    }
+
+    const post = existingPostResult[0];
+    if (post.ownerId !== users_detail.userId) {
+      throw new ApiError(StatusCodes.FORBIDDEN, ReasonPhrases.FORBIDDEN);
+    }
+
+    if (!checkUserAndPostPermission(users_detail.role as string, post.type)) {
+      throw new ApiError(StatusCodes.FORBIDDEN, ReasonPhrases.FORBIDDEN);
+    }
+
+    if (!addressLatitude || !addressLongitude) {
+      const address = `${addressWard} ${addressDistrict} ${addressProvince}`;
+      const getGeoCodingResult = await geocodingByGeocodeMap(address);
+      addressLatitude = getGeoCodingResult.latitude;
+      addressLongitude = getGeoCodingResult.longitude;
+    }
+
+    const updatePostPayload: Partial<postSchemaType> = {
+      title,
+      titleSlug: generateSlug(title),
+      note,
+      description,
+      addressProvince,
+      addressDistrict,
+      addressWard,
+      addressDetail,
+      addressLongitude,
+      addressLatitude,
+      expirationAfter,
+      expirationAfterUnit
+    };
+    const updatePostDetailPayload: Partial<wantedPostSchemaType> = {
+      priceStart,
+      priceEnd,
+      priceUnit,
+      moveInDate: new Date(moveInDate),
+      totalArea: Number(totalArea),
+      totalAreaUnit,
+      hasFurniture: !!Number(hasFurniture),
+      hasAirConditioner: !!Number(hasAirConditioner),
+      hasWashingMachine: !!Number(hasWashingMachine),
+      hasRefrigerator: !!Number(hasRefrigerator),
+      hasPrivateBathroom: !!Number(hasPrivateBathroom),
+      hasParking: !!Number(hasParking),
+      hasSecurity: !!Number(hasSecurity),
+      hasElevator: !!Number(hasElevator),
+      allowPets: !!Number(allowPets)
+    };
+    await Promise.all([
+      updatePostById(post.id, cleanObject(updatePostPayload)),
+      updateWantedPostByPostId(post.id, cleanObject(updatePostDetailPayload))
+    ]);
+
+    if (req.files?.length) {
+      const uploadImageResult = await uploadPostImageHandler(req);
+      if (uploadImageResult.success.length) {
+        await insertPostAssetsHandler(uploadImageResult.success, {
+          userId: users_detail.userId!,
+          postId: post.id
+        });
+      } else {
+        throw new ApiResponse(StatusCodes.BAD_REQUEST, 'Failed to upload!', uploadImageResult).send(res);
+      }
+    }
+
+    const updatedPostResult = await selectFullPostDetailById(post.id, post.type);
+
+    return new ApiResponse(StatusCodes.OK, 'Updated post successfully!', updatedPostResult).send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateJoinPost = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    let {
+      title,
+      description,
+      addressProvince,
+      addressDistrict,
+      addressWard,
+      addressDetail,
+      moveInDate,
+      expirationAfter,
+      expirationAfterUnit,
+      addressLongitude,
+      addressLatitude,
+      note,
+      totalArea,
+      totalAreaUnit,
+      priceStart,
+      priceEnd,
+      priceUnit,
+      hasFurniture,
+      hasAirConditioner,
+      hasWashingMachine,
+      hasRefrigerator,
+      hasPrivateBathroom,
+      hasParking,
+      hasSecurity,
+      hasElevator,
+      allowPets
+    } = req.body;
+    const currentUser = req.currentUser;
+    const { users_detail } = currentUser!;
+    const postId = req.params.postId;
+
+    if (!postId) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
+    }
+
+    if (isNaN(Date.parse(moveInDate))) {
+      throw new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, 'moveInDate value is invalid');
+    }
+
+    const existingPostResult = await selectPostById(Number(postId));
+    if (!existingPostResult.length) {
+      throw new ApiError(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND);
+    }
+
+    const post = existingPostResult[0];
+    if (post.ownerId !== users_detail.userId) {
+      throw new ApiError(StatusCodes.FORBIDDEN, ReasonPhrases.FORBIDDEN);
+    }
+
+    if (!checkUserAndPostPermission(users_detail.role as string, post.type)) {
+      throw new ApiError(StatusCodes.FORBIDDEN, ReasonPhrases.FORBIDDEN);
+    }
+
+    if (!addressLatitude || !addressLongitude) {
+      const address = `${addressWard} ${addressDistrict} ${addressProvince}`;
+      const getGeoCodingResult = await geocodingByGeocodeMap(address);
+      addressLatitude = getGeoCodingResult.latitude;
+      addressLongitude = getGeoCodingResult.longitude;
+    }
+
+    const updatePostPayload: Partial<postSchemaType> = {
+      title,
+      titleSlug: generateSlug(title),
+      note,
+      description,
+      addressProvince,
+      addressDistrict,
+      addressWard,
+      addressDetail,
+      addressLongitude,
+      addressLatitude,
+      expirationAfter,
+      expirationAfterUnit
+    };
+    const updatePostDetailPayload: Partial<joinPostSchemaType> = {
+      priceStart,
+      priceEnd,
+      priceUnit,
+      moveInDate: new Date(moveInDate),
+      totalArea: Number(totalArea),
+      totalAreaUnit,
+      hasFurniture: !!Number(hasFurniture),
+      hasAirConditioner: !!Number(hasAirConditioner),
+      hasWashingMachine: !!Number(hasWashingMachine),
+      hasRefrigerator: !!Number(hasRefrigerator),
+      hasPrivateBathroom: !!Number(hasPrivateBathroom),
+      hasParking: !!Number(hasParking),
+      hasSecurity: !!Number(hasSecurity),
+      hasElevator: !!Number(hasElevator),
+      allowPets: !!Number(allowPets)
+    };
+    await Promise.all([
+      updatePostById(post.id, cleanObject(updatePostPayload)),
+      updateJoinPostByPostId(post.id, cleanObject(updatePostDetailPayload))
+    ]);
+
+    if (req.files?.length) {
+      const uploadImageResult = await uploadPostImageHandler(req);
+      if (uploadImageResult.success.length) {
+        await insertPostAssetsHandler(uploadImageResult.success, {
+          userId: users_detail.userId!,
+          postId: post.id
+        });
+      } else {
+        throw new ApiResponse(StatusCodes.BAD_REQUEST, 'Failed to upload!', uploadImageResult).send(res);
+      }
+    }
+
+    const updatedPostResult = await selectFullPostDetailById(post.id, post.type);
+
+    return new ApiResponse(StatusCodes.OK, 'Updated post successfully!', updatedPostResult).send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updatePassPost = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    let {
+      title,
+      description,
+      addressProvince,
+      addressDistrict,
+      addressWard,
+      addressDetail,
+      expirationAfter,
+      expirationAfterUnit,
+      addressLongitude,
+      addressLatitude,
+      note,
+      priceUnit,
+      passItems
+    } = req.body;
+    const currentUser = req.currentUser;
+    const { users_detail, users } = currentUser!;
+    const postId = req.params.postId;
+
+    if (!postId) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
+    }
+
+    const existingPostResult = await selectPostById(Number(postId));
+    if (!existingPostResult.length) {
+      throw new ApiError(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND);
+    }
+
+    const post = existingPostResult[0];
+    if (post.ownerId !== users_detail.userId) {
+      throw new ApiError(StatusCodes.FORBIDDEN, ReasonPhrases.FORBIDDEN);
+    }
+
+    if (!checkUserAndPostPermission(users_detail.role as string, post.type)) {
+      throw new ApiError(StatusCodes.FORBIDDEN, ReasonPhrases.FORBIDDEN);
+    }
+
+    if (!addressLatitude || !addressLongitude) {
+      const address = `${addressWard} ${addressDistrict} ${addressProvince}`;
+      const getGeoCodingResult = await geocodingByGeocodeMap(address);
+      addressLatitude = getGeoCodingResult.latitude;
+      addressLongitude = getGeoCodingResult.longitude;
+    }
+
+    if (!passItems || !Array.isArray(passItems) || !passItems.length) {
+      throw new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, 'passItems can not be empty');
+    }
+
+    const passPostItemsResult = (await selectPassPostItemsByPostId(post.id)).map((passItem) => passItem.passItemPrice);
+    const passItemsPrices = passItems.map((item) => item.passItemPrice as number);
+
+    const updatePostPayload: Partial<postSchemaType> = {
+      title,
+      titleSlug: generateSlug(title),
+      note,
+      description,
+      addressProvince,
+      addressDistrict,
+      addressWard,
+      addressDetail,
+      addressLongitude,
+      addressLatitude,
+      expirationAfter,
+      expirationAfterUnit
+    };
+    const updatePassPostPayload: Partial<passPostSchemaType> = {
+      priceStart: Math.min(...passItemsPrices, ...passPostItemsResult),
+      priceEnd: Math.max(...passItemsPrices, ...passPostItemsResult),
+      priceUnit
+    };
+    const insertPassPostItemsPayload: passPostItemSchemaType[] = passItems.map((item) => {
+      const { passItemName, passItemPrice, passItemStatus } = item;
+      return {
+        passPostId: post.id,
+        passItemStatus,
+        passItemPrice,
+        passItemName,
+        passItemNameSlug: generateSlug(passItemName)
+      };
+    });
+    await Promise.all([
+      updatePostById(post.id, cleanObject(updatePostPayload)),
+      updatePassPostByPostId(post.id, updatePassPostPayload),
+      insertPassPostItem(insertPassPostItemsPayload)
+    ]);
+
+    if (req.files?.length) {
+      const uploadImageResult = await uploadPostImageHandler(req);
+      if (uploadImageResult.success.length) {
+        await insertPostAssetsHandler(uploadImageResult.success, { userId: users.id!, postId: post.id });
+      } else {
+        throw new ApiResponse(StatusCodes.BAD_REQUEST, 'Failed to upload!', uploadImageResult).send(res);
+      }
+    }
+
+    return new ApiResponse(StatusCodes.OK, 'Update pass post successfully!', { postId }).send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updatePassPostItem = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    let { passItemName, passItemPrice, passItemStatus } = req.body;
+    const currentUser = req.currentUser;
+    const { users_detail, users } = currentUser!;
+    const { postId, itemId } = req.params;
+
+    if (!postId || !itemId) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
+    }
+
+    const existingPostResult = await selectPostById(Number(postId));
+    if (!existingPostResult.length) {
+      throw new ApiError(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND);
+    }
+
+    const post = existingPostResult[0];
+    if (post.ownerId !== users_detail.userId) {
+      throw new ApiError(StatusCodes.FORBIDDEN, ReasonPhrases.FORBIDDEN);
+    }
+
+    if (!checkUserAndPostPermission(users_detail.role as string, post.type)) {
+      throw new ApiError(StatusCodes.FORBIDDEN, ReasonPhrases.FORBIDDEN);
+    }
+
+    const passItemsResult = await selectPassPostItemsByPostId(post.id);
+    const passItemIds = passItemsResult.map((item) => item.id);
+    if (!passItemIds.includes(Number(itemId))) {
+      throw new ApiError(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND);
+    }
+
+    const passItemPrices = passItemsResult.map((item) => item.passItemPrice);
+    const updatePassPostPayload: Partial<passPostSchemaType> = {
+      priceStart: Math.min(...passItemPrices, passItemPrice),
+      priceEnd: Math.max(...passItemPrices, passItemPrice)
+    };
+    const updatePassItemPayload: Partial<passPostItemSchemaType> = {
+      passItemStatus,
+      passItemName,
+      ...(passItemName && { passItemNameSlug: generateSlug(passItemName) }),
+      passItemPrice
+    };
+    await Promise.all([
+      updatePassPostItemById(Number(itemId), cleanObject(updatePassItemPayload)),
+      updatePassPostByPostId(post.id, cleanObject(updatePassPostPayload))
+    ]);
+
+    return new ApiResponse(StatusCodes.OK, 'Update pass item successfully!', { updatedId: Number(itemId) }).send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const removePassPostItems = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const currentUser = req.currentUser;
+    const { users_detail } = currentUser!;
+    const postId = req.params.postId;
+    const passItemIds = req.query.passItemIds;
+
+    if (!postId) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
+    }
+
+    const existingPostResult = await selectPostById(Number(postId));
+    if (!existingPostResult.length) {
+      throw new ApiError(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND);
+    }
+
+    const post = existingPostResult[0];
+    if (post.ownerId !== users_detail.userId) {
+      throw new ApiError(StatusCodes.FORBIDDEN, ReasonPhrases.FORBIDDEN);
+    }
+
+    if (!checkUserAndPostPermission(users_detail.role as string, post.type)) {
+      throw new ApiError(StatusCodes.FORBIDDEN, ReasonPhrases.FORBIDDEN);
+    }
+
+    const passPostItemIdsResult = (await selectPassPostItemsByPostId(post.id)).map((passItem) => passItem.id);
+    if (!passPostItemIdsResult.length) {
+      throw new ApiError(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND);
+    }
+
+    let removeAssetIds: number[];
+    if (Array.isArray(passItemIds)) {
+      removeAssetIds = passItemIds.map((id) => Number(id)).filter((id) => typeof id === 'number' && !isNaN(id));
+    } else {
+      removeAssetIds = [Number(passItemIds)];
+    }
+    removeAssetIds = removeAssetIds.filter((id) => passPostItemIdsResult.includes(id));
+    await deleteManyPassPostItems(post.id, removeAssetIds);
+
+    return new ApiResponse(StatusCodes.OK, 'Delete post assets successfully', { removeIds: removeAssetIds }).send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateViewCount = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const postId = req.params;
+    if (!postId) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
+    }
+
+    const postResult = await selectPostById(Number(postId));
+    if (!postResult.length) {
+      throw new ApiError(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND);
+    }
+    const post = postResult[0];
+    await updatePostById(post.id, { viewedCount: post.viewedCount! + 1 });
+
+    return new ApiResponse(StatusCodes.OK, 'Update view post successfully!').send(res);
   } catch (error) {
     next(error);
   }

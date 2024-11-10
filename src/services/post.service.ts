@@ -13,7 +13,7 @@ import {
 import { ConditionsType } from '@/types/drizzle.type';
 import ApiError from '@/utils/ApiError.helper';
 import { processCondition, processOrderCondition, selectOptions, withPagination } from '@/utils/schema.helper';
-import { SQLWrapper, and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
+import { SQLWrapper, and, asc, desc, eq, getTableColumns, inArray, sql } from 'drizzle-orm';
 import { ReasonPhrases, StatusCodes } from 'http-status-codes';
 import {
   joinPostSchemaType,
@@ -88,9 +88,24 @@ export const selectPostById = async (postId: number) => {
   return db.select().from(posts).where(eq(posts.id, postId));
 };
 
+export const selectPostAssetsByPostId = async (postId: number) => {
+  return db
+    .select({ ...getTableColumns(assetModel) })
+    .from(postAssets)
+    .leftJoin(assetModel, eq(postAssets.assetId, assetModel.id))
+    .where(eq(postAssets.postId, postId));
+};
+
+export const selectPassPostItemsByPostId = async (postId: number) => {
+  return db
+    .select({ ...getTableColumns(passPostItems) })
+    .from(passPostItems)
+    .where(eq(passPostItems.passPostId, postId));
+};
+
 export const selectFullPostDetailById = async (
   postId: number,
-  postType?: postSchemaType['type']
+  postType: postSchemaType['type']
 ): Promise<fullPostResponseType[]> => {
   try {
     let query = db
@@ -528,4 +543,10 @@ export const deletePostAssets = async (postId: number, assetIds: number[] | numb
   } else {
     return db.delete(assets).where(and(eq(assets.id, assetIds), eq(assets.postId, postId)));
   }
+};
+
+export const deleteManyPassPostItems = (postId: number, passPostItemIds: number[]) => {
+  return db
+    .delete(passPostItems)
+    .where(and(eq(passPostItems.passPostId, postId), inArray(passPostItems.id, passPostItemIds)));
 };
