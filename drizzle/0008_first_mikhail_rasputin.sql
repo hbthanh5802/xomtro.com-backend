@@ -1,1 +1,0 @@
-ALTER TABLE `posts` ADD `viewed_count` int DEFAULT 0;

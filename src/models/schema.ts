@@ -48,7 +48,10 @@ export const userDetail = mysqlTable('users_detail', {
   dob: date(),
   isEmailVerified: boolean('is_email_verified').default(false),
   isPhoneVerified: boolean('is_phone_verified').default(false),
-  avatarAssetId: int('avatar_asset_id').references(() => assets.id),
+  avatarAssetId: int('avatar_asset_id').references(() => assets.id, {
+    onDelete: 'cascade',
+    onUpdate: 'cascade'
+  }),
   ...timestamps
 });
 

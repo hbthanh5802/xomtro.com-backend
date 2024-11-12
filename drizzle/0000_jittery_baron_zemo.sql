@@ -53,6 +53,17 @@ CREATE TABLE `join_posts` (
 	`price_end` int,
 	`price_unit` enum('vnd','usd') NOT NULL,
 	`move_in_date` date NOT NULL,
+	`total_area` float,
+	`totalAreaUnit` enum('cm2','m2','km2') DEFAULT 'm2',
+	`has_furniture` boolean DEFAULT false,
+	`has_air_conditioner` boolean DEFAULT false,
+	`has_washing_machine` boolean DEFAULT false,
+	`has_refrigerator` boolean DEFAULT false,
+	`has_private_bathroom` boolean DEFAULT false,
+	`has_parking` boolean DEFAULT false,
+	`has_security` boolean DEFAULT false,
+	`has_elevator` boolean DEFAULT false,
+	`allow_pets` boolean DEFAULT false,
 	CONSTRAINT `join_posts_post_id` PRIMARY KEY(`post_id`)
 );
 --> statement-breakpoint
@@ -83,8 +94,10 @@ CREATE TABLE `notifications` (
 CREATE TABLE `pass_post_items` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`pass_post_id` int NOT NULL,
-	`pass_price` int NOT NULL,
-	`status` enum('new','used'),
+	`pass_item_name` varchar(255) NOT NULL,
+	`pass_item_name_slug` varchar(255),
+	`pass_item_price` int NOT NULL,
+	`pass_item_status` enum('new','used'),
 	CONSTRAINT `pass_post_items_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
@@ -120,26 +133,18 @@ CREATE TABLE `post_comments` (
 	CONSTRAINT `post_comments_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
-CREATE TABLE `post_tags` (
-	`id` int AUTO_INCREMENT NOT NULL,
-	`label` varchar(25) NOT NULL,
-	`used_count` int NOT NULL DEFAULT 1,
-	`created_at` timestamp DEFAULT (now()),
-	`updated_at` timestamp DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
-	CONSTRAINT `post_tags_id` PRIMARY KEY(`id`)
-);
---> statement-breakpoint
 CREATE TABLE `posts` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`owner_id` int,
 	`title` varchar(255) NOT NULL,
+	`title_slug` varchar(255),
 	`description` text,
 	`expiration_after` int,
 	`expiration_after_unit` enum('day','hour','minute') DEFAULT 'day',
-	`status` enum('actived','unactived','removed') DEFAULT 'actived',
+	`status` enum('actived','unactived') DEFAULT 'actived',
 	`type` enum('rental','pass','join','wanted') NOT NULL,
 	`note` text,
-	`tagsList` json,
+	`viewed_count` int DEFAULT 0,
 	`address_province` varchar(255) NOT NULL,
 	`address_district` varchar(255) NOT NULL,
 	`address_detail` varchar(255),
@@ -155,7 +160,7 @@ CREATE TABLE `properties` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`owner_id` int,
 	`address_id` int,
-	`totalArea` float,
+	`total_area` float,
 	`totalAreaUnit` enum('cm2','m2','km2') DEFAULT 'm2',
 	`price_range_start` int DEFAULT 0,
 	`price_range_end` int,
@@ -171,7 +176,18 @@ CREATE TABLE `rental_posts` (
 	`price_end` int,
 	`price_unit` enum('vnd','usd') NOT NULL,
 	`min_lease_term` int NOT NULL,
-	`min_lease_term_unit` enum('enum','day','month','year') NOT NULL,
+	`min_lease_term_unit` enum('hour','day','month','year') NOT NULL,
+	`total_area` float,
+	`totalAreaUnit` enum('cm2','m2','km2') DEFAULT 'm2',
+	`has_furniture` boolean DEFAULT false,
+	`has_air_conditioner` boolean DEFAULT false,
+	`has_washing_machine` boolean DEFAULT false,
+	`has_refrigerator` boolean DEFAULT false,
+	`has_private_bathroom` boolean DEFAULT false,
+	`has_parking` boolean DEFAULT false,
+	`has_security` boolean DEFAULT false,
+	`has_elevator` boolean DEFAULT false,
+	`allow_pets` boolean DEFAULT false,
 	CONSTRAINT `rental_posts_post_id` PRIMARY KEY(`post_id`)
 );
 --> statement-breakpoint
@@ -237,6 +253,17 @@ CREATE TABLE `wanted_posts` (
 	`price_end` int,
 	`price_unit` enum('vnd','usd') NOT NULL,
 	`move_in_date` date NOT NULL,
+	`total_area` float,
+	`totalAreaUnit` enum('cm2','m2','km2') DEFAULT 'm2',
+	`has_furniture` boolean DEFAULT false,
+	`has_air_conditioner` boolean DEFAULT false,
+	`has_washing_machine` boolean DEFAULT false,
+	`has_refrigerator` boolean DEFAULT false,
+	`has_private_bathroom` boolean DEFAULT false,
+	`has_parking` boolean DEFAULT false,
+	`has_security` boolean DEFAULT false,
+	`has_elevator` boolean DEFAULT false,
+	`allow_pets` boolean DEFAULT false,
 	CONSTRAINT `wanted_posts_post_id` PRIMARY KEY(`post_id`)
 );
 --> statement-breakpoint
@@ -250,7 +277,7 @@ ALTER TABLE `messages` ADD CONSTRAINT `messages_sender_id_users_id_fk` FOREIGN K
 ALTER TABLE `messages` ADD CONSTRAINT `messages_asset_id_assets_id_fk` FOREIGN KEY (`asset_id`) REFERENCES `assets`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `notifications` ADD CONSTRAINT `notifications_user_id_users_id_fk` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `notifications` ADD CONSTRAINT `notifications_post_id_posts_id_fk` FOREIGN KEY (`post_id`) REFERENCES `posts`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE `pass_post_items` ADD CONSTRAINT `pass_post_items_pass_post_id_pass_posts_post_id_fk` FOREIGN KEY (`pass_post_id`) REFERENCES `pass_posts`(`post_id`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
+ALTER TABLE `pass_post_items` ADD CONSTRAINT `pass_post_items_pass_post_id_posts_id_fk` FOREIGN KEY (`pass_post_id`) REFERENCES `posts`(`id`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE `pass_posts` ADD CONSTRAINT `pass_posts_post_id_posts_id_fk` FOREIGN KEY (`post_id`) REFERENCES `posts`(`id`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE `post_assets` ADD CONSTRAINT `post_assets_post_id_posts_id_fk` FOREIGN KEY (`post_id`) REFERENCES `posts`(`id`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE `post_assets` ADD CONSTRAINT `post_assets_asset_id_assets_id_fk` FOREIGN KEY (`asset_id`) REFERENCES `assets`(`id`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
@@ -263,7 +290,7 @@ ALTER TABLE `properties` ADD CONSTRAINT `properties_address_id_addresses_id_fk` 
 ALTER TABLE `rental_posts` ADD CONSTRAINT `rental_posts_post_id_posts_id_fk` FOREIGN KEY (`post_id`) REFERENCES `posts`(`id`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE `tokens` ADD CONSTRAINT `tokens_user_id_users_id_fk` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE `users_detail` ADD CONSTRAINT `users_detail_user_id_users_id_fk` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
-ALTER TABLE `users_detail` ADD CONSTRAINT `users_detail_avatar_asset_id_assets_id_fk` FOREIGN KEY (`avatar_asset_id`) REFERENCES `assets`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `users_detail` ADD CONSTRAINT `users_detail_avatar_asset_id_assets_id_fk` FOREIGN KEY (`avatar_asset_id`) REFERENCES `assets`(`id`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE `user_post_reactions` ADD CONSTRAINT `user_post_reactions_user_id_users_id_fk` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE `user_post_reactions` ADD CONSTRAINT `user_post_reactions_post_id_posts_id_fk` FOREIGN KEY (`post_id`) REFERENCES `posts`(`id`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE `wanted_posts` ADD CONSTRAINT `wanted_posts_post_id_posts_id_fk` FOREIGN KEY (`post_id`) REFERENCES `posts`(`id`) ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
