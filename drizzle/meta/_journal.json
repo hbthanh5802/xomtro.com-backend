@@ -5,64 +5,8 @@
     {
       "idx": 0,
       "version": "5",
-      "when": 1730890018853,
-      "tag": "0000_real_blackheart",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "5",
-      "when": 1730903891886,
-      "tag": "0001_ordinary_cyclops",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "5",
-      "when": 1731078616212,
-      "tag": "0002_wandering_naoko",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "5",
-      "when": 1731079180049,
-      "tag": "0003_cold_maria_hill",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "5",
-      "when": 1731117978646,
-      "tag": "0004_charming_giant_man",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "5",
-      "when": 1731123409356,
-      "tag": "0005_wet_lila_cheney",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "5",
-      "when": 1731141776380,
-      "tag": "0006_quiet_catseye",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "5",
-      "when": 1731229958625,
-      "tag": "0007_shiny_bromley",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "5",
-      "when": 1731234799313,
-      "tag": "0008_first_mikhail_rasputin",
+      "when": 1731434784496,
+      "tag": "0000_jittery_baron_zemo",
       "breakpoints": true
     }
   ]

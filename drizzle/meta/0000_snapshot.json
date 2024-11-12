@@ -1,7 +1,7 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "8aa17393-2c17-42d2-b8b0-3ee078d8fa32",
+  "id": "938a2308-19cc-4ac7-88a0-8f8ce133c11c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "addresses": {
@@ -469,6 +469,93 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        },
+        "total_area": {
+          "name": "total_area",
+          "type": "float",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "totalAreaUnit": {
+          "name": "totalAreaUnit",
+          "type": "enum('cm2','m2','km2')",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "'m2'"
+        },
+        "has_furniture": {
+          "name": "has_furniture",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "has_air_conditioner": {
+          "name": "has_air_conditioner",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "has_washing_machine": {
+          "name": "has_washing_machine",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "has_refrigerator": {
+          "name": "has_refrigerator",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "has_private_bathroom": {
+          "name": "has_private_bathroom",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "has_parking": {
+          "name": "has_parking",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "has_security": {
+          "name": "has_security",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "has_elevator": {
+          "name": "has_elevator",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "allow_pets": {
+          "name": "allow_pets",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
         }
       },
       "indexes": {},
@@ -718,15 +805,29 @@
           "notNull": true,
           "autoincrement": false
         },
-        "pass_price": {
-          "name": "pass_price",
+        "pass_item_name": {
+          "name": "pass_item_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "pass_item_name_slug": {
+          "name": "pass_item_name_slug",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "pass_item_price": {
+          "name": "pass_item_price",
           "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "status": {
-          "name": "status",
+        "pass_item_status": {
+          "name": "pass_item_status",
           "type": "enum('new','used')",
           "primaryKey": false,
           "notNull": false,
@@ -735,15 +836,15 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "pass_post_items_pass_post_id_pass_posts_post_id_fk": {
-          "name": "pass_post_items_pass_post_id_pass_posts_post_id_fk",
+        "pass_post_items_pass_post_id_posts_id_fk": {
+          "name": "pass_post_items_pass_post_id_posts_id_fk",
           "tableFrom": "pass_post_items",
-          "tableTo": "pass_posts",
+          "tableTo": "posts",
           "columnsFrom": [
             "pass_post_id"
           ],
           "columnsTo": [
-            "post_id"
+            "id"
           ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
@@ -1053,62 +1154,6 @@
       "uniqueConstraints": {},
       "checkConstraint": {}
     },
-    "post_tags": {
-      "name": "post_tags",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": true
-        },
-        "label": {
-          "name": "label",
-          "type": "varchar(25)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "used_count": {
-          "name": "used_count",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": 1
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": "(now())"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "onUpdate": true,
-          "default": "(now())"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "post_tags_id": {
-          "name": "post_tags_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "checkConstraint": {}
-    },
     "posts": {
       "name": "posts",
       "columns": {
@@ -1131,6 +1176,13 @@
           "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true,
+          "autoincrement": false
+        },
+        "title_slug": {
+          "name": "title_slug",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         },
         "description": {
@@ -1157,7 +1209,7 @@
         },
         "status": {
           "name": "status",
-          "type": "enum('actived','unactived','removed')",
+          "type": "enum('actived','unactived')",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false,
@@ -1177,12 +1229,13 @@
           "notNull": false,
           "autoincrement": false
         },
-        "tagsList": {
-          "name": "tagsList",
-          "type": "json",
+        "viewed_count": {
+          "name": "viewed_count",
+          "type": "int",
           "primaryKey": false,
           "notNull": false,
-          "autoincrement": false
+          "autoincrement": false,
+          "default": 0
         },
         "address_province": {
           "name": "address_province",
@@ -1295,8 +1348,8 @@
           "notNull": false,
           "autoincrement": false
         },
-        "totalArea": {
-          "name": "totalArea",
+        "total_area": {
+          "name": "total_area",
           "type": "float",
           "primaryKey": false,
           "notNull": false,
@@ -1431,10 +1484,97 @@
         },
         "min_lease_term_unit": {
           "name": "min_lease_term_unit",
-          "type": "enum('enum','day','month','year')",
+          "type": "enum('hour','day','month','year')",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        },
+        "total_area": {
+          "name": "total_area",
+          "type": "float",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "totalAreaUnit": {
+          "name": "totalAreaUnit",
+          "type": "enum('cm2','m2','km2')",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "'m2'"
+        },
+        "has_furniture": {
+          "name": "has_furniture",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "has_air_conditioner": {
+          "name": "has_air_conditioner",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "has_washing_machine": {
+          "name": "has_washing_machine",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "has_refrigerator": {
+          "name": "has_refrigerator",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "has_private_bathroom": {
+          "name": "has_private_bathroom",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "has_parking": {
+          "name": "has_parking",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "has_security": {
+          "name": "has_security",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "has_elevator": {
+          "name": "has_elevator",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "allow_pets": {
+          "name": "allow_pets",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
         }
       },
       "indexes": {},
@@ -1711,8 +1851,8 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
         }
       },
       "compositePrimaryKeys": {
@@ -1947,6 +2087,93 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        },
+        "total_area": {
+          "name": "total_area",
+          "type": "float",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "totalAreaUnit": {
+          "name": "totalAreaUnit",
+          "type": "enum('cm2','m2','km2')",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "'m2'"
+        },
+        "has_furniture": {
+          "name": "has_furniture",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "has_air_conditioner": {
+          "name": "has_air_conditioner",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "has_washing_machine": {
+          "name": "has_washing_machine",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "has_refrigerator": {
+          "name": "has_refrigerator",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "has_private_bathroom": {
+          "name": "has_private_bathroom",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "has_parking": {
+          "name": "has_parking",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "has_security": {
+          "name": "has_security",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "has_elevator": {
+          "name": "has_elevator",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "allow_pets": {
+          "name": "allow_pets",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
         }
       },
       "indexes": {},

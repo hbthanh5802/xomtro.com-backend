@@ -9,6 +9,7 @@ import {
   selectFullUserByConditions,
   selectUserByConditions,
   selectUserDetailByEmail,
+  selectUserDetailById,
   updateUserById,
   updateUserDetailById
 } from '@/services/user.service';
@@ -76,13 +77,15 @@ export const registerUser = async (req: Request, res: Response, next: NextFuncti
       phone
     };
     const userDetailResult = await insertUserDetail(userDetailPayload);
-    return new ApiResponse(StatusCodes.CREATED, 'Register successfully!', userDetailResult).send(res);
+    const fullUserResult = await selectUserDetailById(userResult[0].id);
+
+    return new ApiResponse(StatusCodes.CREATED, 'Register successfully!', fullUserResult[0]).send(res);
   } catch (error) {
     next(error);
   }
 };
 
-const handleUserTokenProcess = async (tokenPayload: tokenPayloadType) => {
+export const handleUserTokenProcess = async (tokenPayload: tokenPayloadType) => {
   try {
     const { userId, email, tokenVersion } = tokenPayload;
     const accessToken = generateAccessToken(tokenPayload);
@@ -129,7 +132,7 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
     const { accessToken, refreshToken } = await handleUserTokenProcess(tokenPayload);
 
     res.cookie('refreshToken', refreshToken, {
-      secure: true,
+      secure: false,
       httpOnly: true,
       sameSite: 'strict'
     });
@@ -176,7 +179,7 @@ export const refreshUserToken = async (req: Request, res: Response, next: NextFu
 
     res.cookie('refreshToken', newRefreshToken, {
       sameSite: 'strict',
-      secure: true,
+      secure: false,
       httpOnly: true
     });
 
@@ -274,7 +277,7 @@ export const googleAuth = async (req: Request, res: Response, next: NextFunction
     const { accessToken, refreshToken } = await handleUserTokenProcess(tokenPayload);
 
     res.cookie('refreshToken', refreshToken, {
-      secure: true,
+      secure: false,
       httpOnly: true,
       sameSite: 'strict'
     });

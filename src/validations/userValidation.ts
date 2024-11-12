@@ -63,7 +63,8 @@ export const updateUserProfileValidation = createInsertSchema(userDetail)
     firstName: true,
     lastName: true,
     gender: true,
-    phone: true
+    phone: true,
+    role: true
   })
   .strict()
   .partial();

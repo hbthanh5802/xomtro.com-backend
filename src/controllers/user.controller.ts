@@ -1,3 +1,4 @@
+import { handleUserTokenProcess } from '@/controllers/auth.controller';
 import {
   deleteAddressByConditions,
   deleteAddressById,
@@ -8,6 +9,7 @@ import { insertAsset, selectAssetById, selectAssetsByConditions, updateAssetById
 import { deleteResource, uploadAvatar, uploadImage } from '@/services/fileUpload.service';
 import { searchTokenByCondition } from '@/services/token.service';
 import {
+  selectFullUserByConditions,
   selectUserDetailByEmail,
   selectUserDetailById,
   updateUserById,
@@ -24,7 +26,7 @@ import ApiError from '@/utils/ApiError.helper';
 import { ApiResponse } from '@/utils/ApiResponse.helper';
 import { generateVerifyEmailContent, sendEmail } from '@/utils/email.helper';
 import { formatTimeForVietnamese, timeInVietNam } from '@/utils/time.helper';
-import { emailVerifyTokenType, generateVerifyEmailToken, verifyJwtToken } from '@/utils/token.helper';
+import { generateOtpCode, tokenPayloadType } from '@/utils/token.helper';
 import bcrypt from 'bcrypt';
 import { UploadApiResponse } from 'cloudinary';
 import { NextFunction, Request, Response } from 'express';
@@ -50,19 +52,19 @@ export const getVerifyUserEmail = async (req: Request, res: Response, next: Next
     }
 
     if (existingUser.email === email) {
-      await removeTokenByCondition({ userId: existingUser.userId, type: 'verify', target: 'email' });
-      const verifyToken = generateVerifyEmailToken(existingUser.userId, existingUser.email);
+      await removeTokenByCondition({ userId: existingUser.userId, type: 'otp', target: 'email' });
+      const verifyOtp = generateOtpCode(6);
 
       const expirationTime = timeInVietNam().add(5, 'minute').toDate();
       const tokenPayload: tokenSchemaType = {
         userId: existingUser.userId,
-        value: verifyToken,
-        type: 'verify',
+        value: verifyOtp,
+        type: 'otp',
         expirationTime: expirationTime,
         target: 'email'
       };
 
-      const emailContent = generateVerifyEmailContent(verifyToken, formatTimeForVietnamese(expirationTime), {
+      const emailContent = generateVerifyEmailContent(verifyOtp, formatTimeForVietnamese(expirationTime), {
         headerText: 'Verify Your Email'
       });
       await sendEmail(existingUser.email, 'Verify Your Account', emailContent);
@@ -78,31 +80,56 @@ export const getVerifyUserEmail = async (req: Request, res: Response, next: Next
 // Verify user email token
 export const verifyUserEmail = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { email, token } = req.body;
-    if (!email || !token) throw new ApiError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
-
-    const tokenPayload = (await verifyJwtToken(token, 'secret')) as emailVerifyTokenType;
-    if (tokenPayload.email !== email) {
-      throw new ApiError(StatusCodes.UNAUTHORIZED, ReasonPhrases.UNAUTHORIZED);
-    }
+    const { email, otpCode } = req.body;
+    if (!email || !otpCode) throw new ApiError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
 
     const userDetailResult = await selectUserDetailByEmail(email);
+    if (!userDetailResult.length) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, 'Not existing user.');
+    }
+
     const existingUser = userDetailResult[0];
-    const tokenResult = await searchTokenByCondition({
-      value: token,
-      type: 'verify',
-      userId: tokenPayload.userId,
-      target: 'email'
+    if (existingUser.isEmailVerified) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, 'User email has been already verified!');
+    }
+
+    const existingOtpCode = await searchTokenByCondition({
+      value: otpCode,
+      userId: existingUser.userId,
+      type: 'otp',
+      target: 'email',
+      isActived: true
     });
-    if (!tokenResult.length || !existingUser) {
-      throw new ApiError(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND);
+    if (!existingOtpCode.length) {
+      throw new ApiError(StatusCodes.UNAUTHORIZED, ReasonPhrases.UNAUTHORIZED);
     }
 
     await updateUserDetailById(existingUser.userId, { isEmailVerified: true });
     await updateUserById(existingUser.userId, { status: 'actived' });
-    await removeTokenByCondition({ value: token, userId: existingUser.userId, type: 'verify' });
+    await removeTokenByCondition({ userId: existingUser.userId, type: 'otp', target: 'email' });
 
-    return new ApiResponse(StatusCodes.OK, 'Email was verified successfully!', tokenPayload).send(res);
+    const fullUserResult = await selectFullUserByConditions({ userId: existingUser.userId });
+    const { users, users_detail } = fullUserResult[0];
+    const tokenPayload: tokenPayloadType = {
+      userId: users.id,
+      email: users_detail.email,
+      tokenVersion: users.tokenVersion
+    };
+
+    const { accessToken, refreshToken } = await handleUserTokenProcess(tokenPayload);
+
+    res.cookie('refreshToken', refreshToken, {
+      secure: true,
+      httpOnly: true,
+      sameSite: 'strict'
+    });
+
+    const responseData = {
+      userDetail: users_detail,
+      meta: { accessToken, refreshToken }
+    };
+
+    return new ApiResponse(StatusCodes.OK, 'Email was verified successfully!', responseData).send(res);
   } catch (error) {
     next(error);
   }
@@ -324,7 +351,7 @@ export const updateUserProfile = async (req: Request, res: Response, next: NextF
   try {
     const currentUser = req.currentUser;
     const { users_detail } = currentUser!;
-    const { bio, firstName, lastName, phone, gender, dob } = req.body;
+    const { bio, firstName, lastName, phone, gender, dob, role } = req.body;
 
     const updateProfilePayload: Partial<userDetailSchemaType> = {
       bio,
@@ -332,7 +359,8 @@ export const updateUserProfile = async (req: Request, res: Response, next: NextF
       lastName,
       phone,
       gender,
-      dob
+      dob,
+      role
     };
     await updateUserDetailById(users_detail.userId!, updateProfilePayload);
     const userDetailResult = await selectUserDetailByEmail(users_detail.email);
