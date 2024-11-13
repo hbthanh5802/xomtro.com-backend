@@ -177,6 +177,26 @@ export const getUserAvatar = async (req: Request, res: Response, next: NextFunct
   }
 };
 
+export const getMyAvatar = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const currentUser = req.currentUser;
+    const { users_detail } = currentUser!;
+
+    if (!users_detail.avatarAssetId) {
+      return new ApiResponse(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND).send(res);
+    }
+
+    const selectAvatarResult = await selectAssetById(users_detail.avatarAssetId);
+    if (!selectAvatarResult.length) {
+      return new ApiResponse(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND).send(res);
+    }
+
+    return new ApiResponse(StatusCodes.OK, ReasonPhrases.OK, selectAvatarResult[0]).send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Update user avatar
 const updateExistingAvatar = async (assetId: number, uploadResult: UploadApiResponse) => {
   const selectAssetResult = await selectAssetById(assetId);
