@@ -10,6 +10,7 @@ import { deleteResource, uploadAvatar, uploadImage } from '@/services/fileUpload
 import { searchTokenByCondition } from '@/services/token.service';
 import {
   selectFullUserByConditions,
+  selectUserAvatarByUserId,
   selectUserDetailByEmail,
   selectUserDetailById,
   updateUserById,
@@ -24,6 +25,7 @@ import {
 } from '@/types/schema.type';
 import ApiError from '@/utils/ApiError.helper';
 import { ApiResponse } from '@/utils/ApiResponse.helper';
+import { cleanObject } from '@/utils/constants.helper';
 import { generateVerifyEmailContent, sendEmail } from '@/utils/email.helper';
 import { formatTimeForVietnamese, timeInVietNam } from '@/utils/time.helper';
 import { generateOtpCode, tokenPayloadType } from '@/utils/token.helper';
@@ -159,14 +161,12 @@ export const changeUserPassword = async (req: Request, res: Response, next: Next
 // Get user avatar
 export const getUserAvatar = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const currentUser = req.currentUser;
-    const { users_detail } = currentUser!;
-
-    if (!users_detail.avatarAssetId) {
-      return new ApiResponse(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND).send(res);
+    const { userId } = req.params;
+    if (!userId) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
     }
 
-    const selectAvatarResult = await selectAssetById(users_detail.avatarAssetId);
+    const selectAvatarResult = await selectUserAvatarByUserId(Number(userId));
     if (!selectAvatarResult.length) {
       return new ApiResponse(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND).send(res);
     }
@@ -362,7 +362,8 @@ export const updateUserProfile = async (req: Request, res: Response, next: NextF
       dob,
       role
     };
-    await updateUserDetailById(users_detail.userId!, updateProfilePayload);
+    console.log(cleanObject(updateProfilePayload));
+    await updateUserDetailById(users_detail.userId!, cleanObject(updateProfilePayload));
     const userDetailResult = await selectUserDetailByEmail(users_detail.email);
 
     return new ApiResponse(StatusCodes.OK, 'Update profile successfully!', userDetailResult[0]).send(res);
