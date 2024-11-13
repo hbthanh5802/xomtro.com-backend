@@ -1,9 +1,9 @@
 import { db } from '@/configs/database.config';
-import { userDetail, users } from '@/models/schema';
+import { assets, userDetail, users } from '@/models/schema';
 import { ConditionsType } from '@/types/drizzle.type';
 import { userDetailSchemaType, userSchemaType } from '@/types/schema.type';
 import { processCondition } from '@/utils/schema.helper';
-import { and, eq, or } from 'drizzle-orm';
+import { and, desc, eq, or } from 'drizzle-orm';
 
 // INSERT
 export const insertUser = async (payload: userSchemaType) => {
@@ -70,6 +70,15 @@ export const selectUserByConditions = async <T extends userSchemaType>(
   }
 
   return query;
+};
+
+export const selectUserAvatarByUserId = async (userId: number) => {
+  return db
+    .select()
+    .from(assets)
+    .where(and(eq(assets.userId, userId), eq(assets.folder, 'avatars')))
+    .orderBy(desc(assets.createdAt))
+    .limit(1);
 };
 
 // UPDATE

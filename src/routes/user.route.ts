@@ -24,7 +24,7 @@ router.put(
 );
 
 // User avatar
-router.get('/avatar', authMiddlewares.verifyUser, userController.getUserAvatar);
+router.get('/:userId/avatar', userController.getUserAvatar);
 
 router.put('/avatar', authMiddlewares.verifyUser, uploadMiddleware.single('avatar'), userController.updateUserAvatar);
 
