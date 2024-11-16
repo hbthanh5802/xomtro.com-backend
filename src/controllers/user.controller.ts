@@ -168,7 +168,7 @@ export const getUserAvatar = async (req: Request, res: Response, next: NextFunct
 
     const selectAvatarResult = await selectUserAvatarByUserId(Number(userId));
     if (!selectAvatarResult.length) {
-      return new ApiResponse(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND).send(res);
+      return new ApiResponse(StatusCodes.OK, ReasonPhrases.OK).send(res);
     }
 
     return new ApiResponse(StatusCodes.OK, ReasonPhrases.OK, selectAvatarResult[0]).send(res);
@@ -188,7 +188,7 @@ export const getMyAvatar = async (req: Request, res: Response, next: NextFunctio
 
     const selectAvatarResult = await selectAssetById(users_detail.avatarAssetId);
     if (!selectAvatarResult.length) {
-      return new ApiResponse(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND).send(res);
+      return new ApiResponse(StatusCodes.OK, ReasonPhrases.OK).send(res);
     }
 
     return new ApiResponse(StatusCodes.OK, ReasonPhrases.OK, selectAvatarResult[0]).send(res);
@@ -379,15 +379,15 @@ export const updateUserProfile = async (req: Request, res: Response, next: NextF
       lastName,
       phone,
       gender,
-      dob,
+      dob: dob && new Date(dob),
       role
     };
-    console.log(cleanObject(updateProfilePayload));
     await updateUserDetailById(users_detail.userId!, cleanObject(updateProfilePayload));
     const userDetailResult = await selectUserDetailByEmail(users_detail.email);
 
     return new ApiResponse(StatusCodes.OK, 'Update profile successfully!', userDetailResult[0]).send(res);
   } catch (error) {
+    console.log(error);
     next(error);
   }
 };

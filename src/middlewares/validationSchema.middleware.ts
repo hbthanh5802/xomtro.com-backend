@@ -6,11 +6,11 @@ import { ZodError, ZodSchema, z } from 'zod';
 
 export const validationAsync = (schema: ZodSchema) => async (req: Request, res: Response, next: NextFunction) => {
   try {
+    console.log('Received data', req.body);
     await schema.parseAsync(req.body);
     next();
   } catch (error) {
     if (error instanceof ZodError) {
-      formatZodErrors(error);
       return new ApiResponse(
         StatusCodes.UNPROCESSABLE_ENTITY,
         ReasonPhrases.UNPROCESSABLE_ENTITY,

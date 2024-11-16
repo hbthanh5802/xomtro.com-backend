@@ -1,6 +1,7 @@
 import { addresses, userDetail } from '@/models/schema';
 import { userRole } from '@/types/schema.type';
-import { emailValidation, passwordValidation, phoneValidation } from '@/validations/commonValidation';
+import { dateValidation, emailValidation, passwordValidation, phoneValidation } from '@/validations/commonValidation';
+import dayjs from 'dayjs';
 import { createInsertSchema } from 'drizzle-zod';
 import { z } from 'zod';
 
@@ -57,14 +58,16 @@ export const forgotPasswordValidation = z
     path: ['confirmPassword']
   });
 
-export const updateUserProfileValidation = createInsertSchema(userDetail)
+export const updateUserProfileValidation = createInsertSchema(userDetail, {
+  dob: dateValidation
+})
   .pick({
     bio: true,
     firstName: true,
     lastName: true,
     gender: true,
     phone: true,
-    role: true
+    role: true,
+    dob: true
   })
-  .strict()
   .partial();
