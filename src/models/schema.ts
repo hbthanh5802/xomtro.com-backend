@@ -45,7 +45,7 @@ export const userDetail = mysqlTable('users_detail', {
   firstName: varchar('first_name', { length: 50 }).notNull(),
   lastName: varchar('last_name', { length: 50 }).notNull(),
   gender: mysqlEnum(['male', 'female', 'others']),
-  dob: date(),
+  dob: datetime(),
   isEmailVerified: boolean('is_email_verified').default(false),
   isPhoneVerified: boolean('is_phone_verified').default(false),
   avatarAssetId: int('avatar_asset_id').references(() => assets.id, {

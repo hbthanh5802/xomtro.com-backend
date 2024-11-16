@@ -1,3 +1,4 @@
+import dayjs from 'dayjs';
 import { z } from 'zod';
 
 export const emailValidation = z
@@ -17,3 +18,7 @@ export const passwordValidation = z
     passwordRegex,
     'Password must contain at least 6 characters, including 1 uppercase letter, 1 number, 1 special symbol (Example: @,$,!,%,*,?,&)'
   );
+
+export const dateValidation = z.string().refine((date) => dayjs(date, 'YYYY-MM-DD', true).isValid(), {
+  message: 'Thông tin không đúng định dạng YYYY-MM-DD'
+});

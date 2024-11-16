@@ -1,0 +1,1 @@
+ALTER TABLE `users_detail` MODIFY COLUMN `dob` datetime;
