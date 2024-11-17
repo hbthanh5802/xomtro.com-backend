@@ -18,7 +18,7 @@ export const formatTimeForVietnamese = (
   date: dayjs.Dayjs | Date,
   format: 'HH:mm:ss DD/MM/YYYY' | 'DD/MM/YYYY' = 'HH:mm:ss DD/MM/YYYY'
 ) => {
-  const dayjsDate = dayjs.isDayjs(date) ? date : dayjs(date).utc();
+  const dayjsDate = dayjs.isDayjs(date) ? date : dayjs(date);
 
   return dayjsDate.locale('vi').format(format);
 };

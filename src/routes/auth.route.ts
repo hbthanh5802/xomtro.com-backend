@@ -19,6 +19,8 @@ router.post('/refresh', authController.refreshUserToken);
 
 router.post('/logout', authMiddlewares.verifyUser, authController.logoutUser);
 
+router.get('/google/password', authMiddlewares.verifyUser, authController.getDefaultGooglePassword);
+
 router.post('/google', validationAsync(oAuthValidation), authController.googleAuth);
 
 router.get('/forgot-password', authController.getForgotPassword);
