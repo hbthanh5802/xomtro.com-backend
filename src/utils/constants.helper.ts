@@ -37,3 +37,34 @@ export const cleanObject = (obj: Record<string, any>) => {
     Object.entries(obj).filter(([_, value]) => value != null && value !== '' && !Number.isNaN(value))
   );
 };
+
+export const generateRandomPassword = (
+  length: number,
+  includeUppercase: boolean,
+  includeNumbers: boolean,
+  includeSpecialChars: boolean,
+  options?: { prefix?: string; suffix?: string }
+) => {
+  const lowercaseChars = 'abcdefghijklmnopqrstuvwxyz';
+  const uppercaseChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const numberChars = '0123456789';
+  const specialChars = '!@#$%^&*?';
+
+  let allChars = lowercaseChars;
+  if (includeUppercase) allChars += uppercaseChars;
+  if (includeNumbers) allChars += numberChars;
+  if (includeSpecialChars) allChars += specialChars;
+
+  if (!allChars) throw new Error('At least one character type must be included.');
+
+  let password = '';
+  for (let i = 0; i < length; i++) {
+    const randomIndex = Math.floor(Math.random() * allChars.length);
+    password += allChars[randomIndex];
+  }
+
+  if (options?.prefix) password = options.prefix + password;
+  if (options?.suffix) password = password + options.suffix;
+
+  return password;
+};

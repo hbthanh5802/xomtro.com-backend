@@ -1,13 +1,11 @@
 import axiosRequest from '@/configs/axiosClient.config';
-import googleClient from '@/configs/google.config';
 import { insertAsset } from '@/services/asset.service';
 import { uploadImageFromUrl } from '@/services/fileUpload.service';
-import { insertToken, removeTokenByCondition, removeTokenById, searchTokenByCondition } from '@/services/token.service';
+import { insertToken, removeTokenByCondition, searchTokenByCondition } from '@/services/token.service';
 import {
   insertUser,
   insertUserDetail,
   selectFullUserByConditions,
-  selectUserByConditions,
   selectUserDetailByEmail,
   selectUserDetailById,
   updateUserById,
@@ -23,7 +21,8 @@ import {
 } from '@/types/schema.type';
 import ApiError from '@/utils/ApiError.helper';
 import { ApiResponse } from '@/utils/ApiResponse.helper';
-import { generateVerifyEmailContent, sendEmail } from '@/utils/email.helper';
+import { generateRandomPassword } from '@/utils/constants.helper';
+import { generateEmailContent, generateVerifyEmailContent, sendEmail } from '@/utils/email.helper';
 import { generateFileName } from '@/utils/file.helper';
 import { formatTimeForVietnamese, timeInVietNam } from '@/utils/time.helper';
 import {
@@ -32,7 +31,6 @@ import {
   generateRefreshToken,
   refreshExpirationTime,
   tokenPayloadType,
-  verifyGoogleToken,
   verifyJwtToken
 } from '@/utils/token.helper';
 import bcrypt from 'bcrypt';
@@ -221,7 +219,7 @@ export const googleAuth = async (req: Request, res: Response, next: NextFunction
     const existingUser = await selectUserDetailByEmail(email);
     if (!existingUser.length) {
       // Create a new user
-      const defaultUserPassword = given_name.toLowerCase() + '@123456@password';
+      const defaultUserPassword = generateRandomPassword(6, true, true, true, { prefix: 'google' });
       const hashedPassword = await bcrypt.hash(defaultUserPassword, 10);
       const userPayload: userSchemaType = {
         password: hashedPassword,
@@ -260,6 +258,16 @@ export const googleAuth = async (req: Request, res: Response, next: NextFunction
         phone: ''
       };
       await insertUserDetail(userDetailPayload);
+
+      const emailTime = timeInVietNam();
+      const emailContent = generateEmailContent(`${family_name} ${given_name}`, {
+        headerText: 'Đăng ký tài khoản thành công',
+        mainText: 'Đăng ký tài khoản mới',
+        bodyText: `Mật khẩu Google mặc đinh là: <strong>${defaultUserPassword}</strong>`,
+        bodySubText: `Nếu bạn không yêu cầu hành động này. Hãy bỏ qua hoặc kiểm tra lại bảo mật.`,
+        footerText: `Bạn đã yêu cầu email này vào lúc: <strong>${formatTimeForVietnamese(emailTime, 'HH:mm:ss DD/MM/YYYY')}</strong>`
+      });
+      sendEmail(email as string, 'Tạo tài khoản mới', emailContent);
     }
 
     const fullUserResult = await selectFullUserByConditions({ email: email });
@@ -380,6 +388,31 @@ export const disableUser = async (req: Request, res: Response, next: NextFunctio
     await updateUserDetailById(users.id!, { isEmailVerified: false });
 
     return new ApiResponse(StatusCodes.OK, 'Disable account successfully!').send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getDefaultGooglePassword = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const currentUser = req.currentUser;
+    const { users_detail } = currentUser!;
+    // Reset password
+    const defaultUserPassword = generateRandomPassword(6, true, true, true, { prefix: 'google' });
+    const hashedPassword = await bcrypt.hash(defaultUserPassword, 10);
+    await updateUserById(users_detail.userId!, { password: hashedPassword });
+    // Send email
+    const emailTime = timeInVietNam();
+    const emailContent = generateEmailContent(`${users_detail.firstName} ${users_detail.lastName}`, {
+      headerText: 'Thay đổi mật khẩu',
+      mainText: 'Thay đổi mật khẩu',
+      bodyText: `Mật khẩu Google mặc đinh là: <strong>${defaultUserPassword}</strong>`,
+      bodySubText: `Nếu bạn không yêu cầu hành động này. Hãy bỏ qua hoặc kiểm tra lại bảo mật.`,
+      footerText: `Bạn đã yêu cầu email này vào lúc: <strong>${formatTimeForVietnamese(emailTime, 'HH:mm:ss DD/MM/YYYY')}</strong>`
+    });
+    await sendEmail(users_detail.email as string, 'Thay đổi mật khẩu', emailContent);
+
+    return new ApiResponse(StatusCodes.OK, ReasonPhrases.OK).send(res);
   } catch (error) {
     next(error);
   }
