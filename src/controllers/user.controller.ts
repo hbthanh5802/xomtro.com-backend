@@ -3,10 +3,12 @@ import {
   deleteAddressByConditions,
   deleteAddressById,
   insertAddress,
+  updateAddressByConditions,
   updateAddressById
 } from '@/services/address.service';
 import { insertAsset, selectAssetById, selectAssetsByConditions, updateAssetById } from '@/services/asset.service';
 import { deleteResource, uploadAvatar } from '@/services/fileUpload.service';
+import { geocodingByGeocodeMap } from '@/services/location.service';
 import { updatePostByConditions } from '@/services/post.service';
 import { searchTokenByCondition } from '@/services/token.service';
 import {
@@ -269,18 +271,35 @@ export const updateUserAvatar = async (req: Request, res: Response, next: NextFu
 
 export const createUserAddress = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const currentUser = req.currentUser?.users;
-    const { provinceName, districtName, wardName, detail, postalCode, longitude, latitude } = req.body;
+    const currentUser = req.currentUser;
+    const { users } = currentUser!;
+    let { provinceName, districtName, wardName, detail, postalCode, longitude, latitude } = req.body;
+
+    if (!longitude || !latitude) {
+      const address = `${wardName} ${districtName} ${provinceName}`;
+      const getGeoCodingResult = await geocodingByGeocodeMap(address);
+      latitude = getGeoCodingResult.latitude;
+      longitude = getGeoCodingResult.longitude;
+    }
+
+    const getExistingUserAddressDefault = await searchAddressByConditions({
+      userId: { operator: 'eq', value: users.id },
+      isDefault: { operator: 'eq', value: true }
+    });
+    const isDefault = getExistingUserAddressDefault.length ? false : true;
 
     const insertAddressPayload: addressSchemaType = {
-      userId: currentUser?.id,
+      userId: users.id,
       provinceName,
       districtName,
       wardName,
       detail,
       longitude,
-      latitude
+      latitude,
+      isDefault
     };
+
+    console.log(insertAddressPayload);
     const insertResult = await insertAddress(insertAddressPayload);
     const justInsertedAddress = await searchAddressByConditions({
       id: {
@@ -291,20 +310,36 @@ export const createUserAddress = async (req: Request, res: Response, next: NextF
 
     return new ApiResponse(StatusCodes.CREATED, ReasonPhrases.CREATED, justInsertedAddress).send(res);
   } catch (error) {
+    console.log(error);
     next(error);
   }
 };
 
 export const updateUserAddress = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const currentUser = req.currentUser?.users;
+    const currentUser = req.currentUser;
+    const { users } = currentUser!;
     const { addressId } = req.params;
 
     if (!addressId) {
       return new ApiResponse(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_GATEWAY).send(res);
     }
 
-    const { provinceName, districtName, wardName, detail, postalCode, longitude, latitude } = req.body;
+    const selectAddressResult = await searchAddressByConditions({
+      id: { operator: 'eq', value: Number(addressId) },
+      userId: { operator: 'eq', value: users.id }
+    });
+    if (!selectAddressResult.length) {
+      throw new ApiError(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND);
+    }
+
+    let { provinceName, districtName, wardName, detail, postalCode, longitude, latitude } = req.body;
+    if (!longitude || !latitude) {
+      const address = `${wardName} ${districtName} ${provinceName}`;
+      const getGeoCodingResult = await geocodingByGeocodeMap(address);
+      latitude = getGeoCodingResult.latitude;
+      longitude = getGeoCodingResult.longitude;
+    }
     const addressPayload: addressSchemaType = {
       provinceName,
       districtName,
@@ -365,6 +400,34 @@ export const getUserAddresses = async (req: Request, res: Response, next: NextFu
     });
 
     return new ApiResponse(StatusCodes.OK, ReasonPhrases.OK, selectResult).send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const setDefaultAddress = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { addressId } = req.params;
+    const { users } = req.currentUser!;
+    if (!addressId) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
+    }
+
+    const selectAddressResult = await searchAddressByConditions({
+      id: { operator: 'eq', value: Number(addressId) },
+      userId: { operator: 'eq', value: users.id }
+    });
+    if (!selectAddressResult.length) {
+      throw new ApiError(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND);
+    }
+
+    await updateAddressByConditions({ isDefault: false }, { userId: { operator: 'eq', value: users.id } });
+    await updateAddressByConditions(
+      { isDefault: true },
+      { userId: { operator: 'eq', value: users.id }, id: { operator: 'eq', value: Number(addressId) } }
+    );
+
+    return new ApiResponse(StatusCodes.OK, 'Update default address successfully!', { addressId }).send(res);
   } catch (error) {
     next(error);
   }

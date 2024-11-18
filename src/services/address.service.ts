@@ -27,6 +27,20 @@ export const updateAddressById = async (addressId: number, payload: Partial<addr
   return db.update(addresses).set(payload).where(eq(addresses.id, addressId));
 };
 
+export const updateAddressByConditions = async <T extends addressSchemaType>(
+  payload: Partial<T>,
+  conditions: ConditionsType<T>
+) => {
+  const whereClause = Object.entries(conditions).map(([field, condition]) => {
+    return processCondition(field, condition, addresses as any);
+  });
+
+  return db
+    .update(addresses)
+    .set(payload)
+    .where(and(...whereClause));
+};
+
 // DELETE
 export const deleteAddressById = async (addressId: number) => {
   return db.delete(addresses).where(eq(addresses.id, addressId)).limit(1);

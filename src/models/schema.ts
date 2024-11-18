@@ -1,13 +1,11 @@
 import { timestamps } from '@/utils/schema.helper';
 import { sql } from 'drizzle-orm';
 import {
-  AnyMySqlColumn,
   boolean,
   date,
   datetime,
   decimal,
   float,
-  foreignKey,
   index,
   int,
   json,
@@ -65,8 +63,9 @@ export const addresses = mysqlTable(
     wardName: varchar('ward_name', { length: 255 }).notNull(),
     detail: text(),
     postalCode: varchar('postal_code', { length: 25 }),
-    latitude: decimal({ precision: 11, scale: 8 }),
-    longitude: decimal({ precision: 10, scale: 8 }),
+    isDefault: boolean('is_default').default(false),
+    latitude: decimal({ precision: 10, scale: 8 }), // Đủ lưu -90 đến 90
+    longitude: decimal({ precision: 11, scale: 8 }), // Đủ lưu -180 đến 180
     ...timestamps
   },
   (table) => {

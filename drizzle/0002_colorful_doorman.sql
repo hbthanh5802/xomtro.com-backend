@@ -1,0 +1,1 @@
+ALTER TABLE `addresses` ADD `is_default` boolean DEFAULT false;
