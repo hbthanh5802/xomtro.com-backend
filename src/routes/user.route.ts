@@ -38,6 +38,8 @@ router.post(
   userController.createUserAddress
 );
 
+router.put('/addresses/:addressId/default', authMiddlewares.verifyUser, userController.updateUserAddress);
+
 router.put(
   '/addresses/:addressId',
   authMiddlewares.verifyUser,

@@ -15,6 +15,20 @@
       "when": 1731776226121,
       "tag": "0001_slow_scourge",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1731923673135,
+      "tag": "0002_colorful_doorman",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1731938946766,
+      "tag": "0003_mysterious_giant_man",
+      "breakpoints": true
     }
   ]
 }
