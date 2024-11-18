@@ -33,18 +33,19 @@ export const generateVerifyEmailContent = (
       <!-- Main content -->
       <div style="padding: 20px;">
           <h2 style="color: #0B6BCB; text-align: center;">${mainText ? mainText : ''}</h2>
-          <p>Hello,</p>
-          <p>We have received a request to verify your account. Please use the <strong>document</strong> below to proceed:</p>
+          <p>Xin chào,</p>
+          <p>Chúng tôi nhận được một yêu cầu <strong>xác thực tài khoản</strong>. Hãy sử dụng <strong>thông tin</strong> dưới đây để tiếp tục:</p>
           <div style="text-align: center; margin: 20px 0;">
               <span style="display: inline-block; background-color: #f1f1f1; padding: 10px 20px; font-size: 28px; font-weight: bold; color: #4CAF50; border-radius: 8px;">${verifyText}</span>
           </div>
-          <p style="text-align: center;">The confirmation document is valid until <strong>${expirationTime}</strong>.</p>
-          <p>If you did not request this code, please ignore this email.</p>
+          <p style="text-align: center;">Đoạn thông tin được cung cấp có hiệu lực tới <strong>${expirationTime}</strong>.</p>
+          <p>Nếu bạn không yêu cầu mã này, vui lòng bỏ qua email.</p>
+          <p>Xin chân thành cảm ơn!.</p>
       </div>
 
       <!-- Footer -->
       <div style="background-color: #f1f1f1; padding: 20px; text-align: center;">
-          <p style="font-size: 12px; color: #888;">${footerText ? footerText : 'You received this email because you requested account verification.'}</p>
+          <p style="font-size: 12px; color: #888;">${footerText ? footerText : 'Bạn nhận được email này để xác thực tài khoản.'}</p>
           <p style="font-size: 12px; color: #888;">&copy; 2024 xomtro.com. All rights reserved.</p>
       </div>
   </div>
@@ -63,9 +64,11 @@ export const generateEmailContent = (username?: string, options?: emailContentOp
       <!-- Main content -->
       <div style="padding: 20px;">
           <h2 style="color: #0B6BCB; text-align: center;">${mainText ? mainText : ''}</h2>
-          <strong>Hello, ${username ? username : ''}!</strong>
+          <strong>Xin chào, ${username ? username : ''}!</strong>
           <p>${bodyText ? bodyText : ''}</p>
           <p>${bodySubText ? bodySubText : ''}</p>
+          <p>Nếu bạn không yêu cầu mã này, vui lòng bỏ qua email.</p>
+          <p>Xin chân thành cảm ơn!.</p>
       </div>
 
       <!-- Footer -->

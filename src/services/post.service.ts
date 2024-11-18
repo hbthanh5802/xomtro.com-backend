@@ -13,7 +13,7 @@ import {
 import { ConditionsType } from '@/types/drizzle.type';
 import ApiError from '@/utils/ApiError.helper';
 import { processCondition, processOrderCondition, selectOptions, withPagination } from '@/utils/schema.helper';
-import { SQLWrapper, and, asc, desc, eq, getTableColumns, inArray, sql } from 'drizzle-orm';
+import { SQLWrapper, and, eq, getTableColumns, inArray, sql } from 'drizzle-orm';
 import { ReasonPhrases, StatusCodes } from 'http-status-codes';
 import {
   joinPostSchemaType,
@@ -510,6 +510,20 @@ export const selectPassPostByConditions = async <T extends selectPassPostByCondi
 // UPDATE
 export const updatePostById = async (postId: number, payload: Partial<postSchemaType>) => {
   return db.update(posts).set(payload).where(eq(posts.id, postId));
+};
+
+export const updatePostByConditions = async <T extends postSchemaType>(
+  payload: Partial<T>,
+  conditions: ConditionsType<T>
+) => {
+  const whereClause = Object.entries(conditions).map(([field, condition]) => {
+    return processCondition(field, condition, posts as any);
+  });
+
+  return db
+    .update(posts)
+    .set(payload)
+    .where(and(...whereClause));
 };
 
 export const updateRentalPostByPostId = async (postId: number, payload: Partial<rentalPostSchemaType>) => {
