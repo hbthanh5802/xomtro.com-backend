@@ -6,7 +6,8 @@ import {
   updateAddressById
 } from '@/services/address.service';
 import { insertAsset, selectAssetById, selectAssetsByConditions, updateAssetById } from '@/services/asset.service';
-import { deleteResource, uploadAvatar, uploadImage } from '@/services/fileUpload.service';
+import { deleteResource, uploadAvatar } from '@/services/fileUpload.service';
+import { updatePostByConditions } from '@/services/post.service';
 import { searchTokenByCondition } from '@/services/token.service';
 import {
   selectFullUserByConditions,
@@ -57,20 +58,19 @@ export const getVerifyUserEmail = async (req: Request, res: Response, next: Next
       await removeTokenByCondition({ userId: existingUser.userId, type: 'otp', target: 'email' });
       const verifyOtp = generateOtpCode(6);
 
-      const expirationTime = timeInVietNam().add(5, 'minute').toDate();
+      const expirationTime = timeInVietNam().add(5, 'minute');
       const tokenPayload: tokenSchemaType = {
         userId: existingUser.userId,
         value: verifyOtp,
         type: 'otp',
-        expirationTime: expirationTime,
+        expirationTime: expirationTime.toDate(),
         target: 'email'
       };
 
       const emailContent = generateVerifyEmailContent(verifyOtp, formatTimeForVietnamese(expirationTime), {
-        headerText: 'Verify Your Email'
+        headerText: 'Xác thực tài khoản'
       });
-      await sendEmail(existingUser.email, 'Verify Your Account', emailContent);
-      await insertToken(tokenPayload);
+      await Promise.all([sendEmail(existingUser.email, 'Xác thực tài khoản', emailContent), insertToken(tokenPayload)]);
 
       return new ApiResponse(StatusCodes.OK, ReasonPhrases.OK).send(res);
     }
@@ -106,9 +106,12 @@ export const verifyUserEmail = async (req: Request, res: Response, next: NextFun
       throw new ApiError(StatusCodes.UNAUTHORIZED, ReasonPhrases.UNAUTHORIZED);
     }
 
-    await updateUserDetailById(existingUser.userId, { isEmailVerified: true });
-    await updateUserById(existingUser.userId, { status: 'actived' });
-    await removeTokenByCondition({ userId: existingUser.userId, type: 'otp', target: 'email' });
+    await Promise.all([
+      updatePostByConditions({ status: 'actived' }, { ownerId: { operator: 'eq', value: existingUser.userId } }),
+      updateUserDetailById(existingUser.userId, { isEmailVerified: true }),
+      updateUserById(existingUser.userId, { status: 'actived' }),
+      removeTokenByCondition({ userId: existingUser.userId, type: 'otp', target: 'email' })
+    ]);
 
     const fullUserResult = await selectFullUserByConditions({ userId: existingUser.userId });
     const { users, users_detail } = fullUserResult[0];

@@ -1,6 +1,7 @@
 import axiosRequest from '@/configs/axiosClient.config';
 import { insertAsset } from '@/services/asset.service';
 import { uploadImageFromUrl } from '@/services/fileUpload.service';
+import { updatePostByConditions } from '@/services/post.service';
 import { insertToken, removeTokenByCondition, searchTokenByCondition } from '@/services/token.service';
 import {
   insertUser,
@@ -384,9 +385,22 @@ export const disableUser = async (req: Request, res: Response, next: NextFunctio
   try {
     const currentUser = req.currentUser;
     const { users } = currentUser!;
-    await updateUserById(users.id!, { status: 'unactived' });
-    await updateUserDetailById(users.id!, { isEmailVerified: false });
-
+    await Promise.all([
+      updateUserById(users.id!, { status: 'unactived', tokenVersion: users.tokenVersion! + 1 }),
+      updateUserDetailById(users.id!, { isEmailVerified: false }),
+      updatePostByConditions(
+        { status: 'unactived' },
+        {
+          ownerId: {
+            operator: 'eq',
+            value: users.id
+          }
+        }
+      ),
+      removeTokenByCondition({ userId: users.id })
+    ]);
+    // Clear existing token
+    res.clearCookie('refreshToken');
     return new ApiResponse(StatusCodes.OK, 'Disable account successfully!').send(res);
   } catch (error) {
     next(error);
