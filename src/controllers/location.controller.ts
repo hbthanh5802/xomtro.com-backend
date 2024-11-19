@@ -3,7 +3,7 @@ import {
   distanceMatrixByGoong,
   distanceMatrixRequestPayload,
   geocodingByDistanceMatrix,
-  geocodingByGeocodeMap,
+  geocodingByGoong,
   geocodingReverseByGoong,
   locationAutoCompleteByGoong,
   locationAutoCompleteRequestPayload
@@ -118,10 +118,7 @@ export const getGeocodingFromAddress = async (req: Request, res: Response, next:
       throw new ApiError(StatusCodes.BAD_REQUEST, `"address" parameter is required.`);
     }
 
-    const apiServices = [
-      () => geocodingByDistanceMatrix(address as string),
-      () => geocodingByGeocodeMap(address as string)
-    ];
+    const apiServices = [() => geocodingByDistanceMatrix(address as string), () => geocodingByGoong(address as string)];
 
     const randomApiServiceIndex = Math.floor(Math.random() * apiServices.length);
     const response = await apiServices[randomApiServiceIndex]();

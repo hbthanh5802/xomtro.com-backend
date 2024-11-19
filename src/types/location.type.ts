@@ -136,6 +136,22 @@ export type GeocodeMapGeoCodeResponseType = {
 };
 
 // Goong.io
+export interface GoongGeocodeResponse {
+  results: Array<{
+    address_components: { long_name: string; short_name: string }[];
+    formatted_address: string;
+    geometry: { location: { lat: number; lng: number }; boundary: any };
+    place_id: string;
+    reference: string;
+    plus_code: { compound_code: string; global_code: string };
+    compound: { district: string; commune: string; province: string };
+    types: string[];
+    name: string;
+    address: string;
+  }>;
+  status: DistanceMatrixStatusResponse;
+}
+
 export type GoongGeocodeReverseResponse = {
   results: Array<{
     address_components: Array<{
@@ -207,6 +223,7 @@ export type geocodingResponseType = {
   longitude: number;
   latitude: number;
   displayName?: string;
+  googleMapReference?: string;
   placeId?: string;
   accuracy?: number;
 };

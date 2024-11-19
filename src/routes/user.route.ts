@@ -38,7 +38,7 @@ router.post(
   userController.createUserAddress
 );
 
-router.put('/addresses/:addressId/default', authMiddlewares.verifyUser, userController.updateUserAddress);
+router.put('/addresses/:addressId/default', authMiddlewares.verifyUser, userController.setDefaultAddress);
 
 router.put(
   '/addresses/:addressId',
@@ -50,6 +50,8 @@ router.put(
 router.delete('/addresses', authMiddlewares.verifyUser, userController.removeUserAddress);
 
 router.get('/addresses', authMiddlewares.verifyUser, userController.getUserAddresses);
+
+router.get('/addresses/:userId/default', userController.getUserDefaultAddress);
 
 // Profile
 router.put(

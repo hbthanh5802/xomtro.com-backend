@@ -5,6 +5,7 @@ import {
   GeocodeMapGeoCodeResponseType,
   GoongAutoCompleteResponseType,
   GoongDistanceMatrixResponseType,
+  GoongGeocodeResponse,
   GoongGeocodeReverseResponse,
   geocodingResponseType,
   geocodingReverseResponseType
@@ -60,6 +61,35 @@ export const geocodingByGeocodeMap = async (address: string) => {
       placeId: response[0].place_id.toString(),
       displayName: response[0].display_name,
       accuracy: response[0].importance
+    };
+
+    return responseData;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const geocodingByGoong = async (address: string) => {
+  try {
+    const response = await axiosRequest<GoongGeocodeResponse>({
+      url: 'https://rsapi.goong.io/geocode',
+      params: {
+        address: address,
+        api_key: env.GOONG_API_KEY
+      }
+    });
+
+    if (!response.results.length) {
+      throw new ApiError(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND);
+    }
+
+    const result = response.results[0];
+    const responseData: geocodingResponseType = {
+      longitude: Number(result.geometry.location.lng),
+      latitude: Number(result.geometry.location.lat),
+      placeId: result.place_id,
+      googleMapReference: result.reference,
+      displayName: result.formatted_address
     };
 
     return responseData;
