@@ -58,6 +58,7 @@ export const addresses = mysqlTable(
   {
     id: int().primaryKey().autoincrement(),
     userId: int('user_id').references(() => users.id),
+    addressCode: varchar('address_code', { length: 255 }),
     provinceName: varchar('province_name', { length: 255 }).notNull(),
     districtName: varchar('district_name', { length: 255 }).notNull(),
     wardName: varchar('ward_name', { length: 255 }).notNull(),

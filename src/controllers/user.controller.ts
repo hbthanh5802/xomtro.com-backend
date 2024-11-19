@@ -8,7 +8,7 @@ import {
 } from '@/services/address.service';
 import { insertAsset, selectAssetById, selectAssetsByConditions, updateAssetById } from '@/services/asset.service';
 import { deleteResource, uploadAvatar } from '@/services/fileUpload.service';
-import { geocodingByGeocodeMap } from '@/services/location.service';
+import { geocodingByDistanceMatrix, geocodingByGoong } from '@/services/location.service';
 import { updatePostByConditions } from '@/services/post.service';
 import { searchTokenByCondition } from '@/services/token.service';
 import {
@@ -273,13 +273,22 @@ export const createUserAddress = async (req: Request, res: Response, next: NextF
   try {
     const currentUser = req.currentUser;
     const { users } = currentUser!;
-    let { provinceName, districtName, wardName, detail, postalCode, longitude, latitude } = req.body;
+    let { provinceName, districtName, wardName, detail, postalCode, longitude, latitude, addressCode } = req.body;
 
     if (!longitude || !latitude) {
-      const address = `${wardName} ${districtName} ${provinceName}`;
-      const getGeoCodingResult = await geocodingByGeocodeMap(address);
-      latitude = getGeoCodingResult.latitude;
-      longitude = getGeoCodingResult.longitude;
+      const address = `${wardName}, ${districtName}, ${provinceName}`;
+      const apiServices = [
+        () => geocodingByDistanceMatrix(address as string),
+        () => geocodingByGoong(address as string)
+      ];
+
+      const randomApiServiceIndex = Math.floor(Math.random() * apiServices.length);
+      await apiServices[randomApiServiceIndex]()
+        .then((getGeoCodingResult) => {
+          latitude = getGeoCodingResult.latitude;
+          longitude = getGeoCodingResult.longitude;
+        })
+        .catch(() => {});
     }
 
     const getExistingUserAddressDefault = await searchAddressByConditions({
@@ -296,7 +305,8 @@ export const createUserAddress = async (req: Request, res: Response, next: NextF
       detail,
       longitude,
       latitude,
-      isDefault
+      isDefault,
+      addressCode
     };
 
     console.log(insertAddressPayload);
@@ -333,20 +343,31 @@ export const updateUserAddress = async (req: Request, res: Response, next: NextF
       throw new ApiError(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND);
     }
 
-    let { provinceName, districtName, wardName, detail, postalCode, longitude, latitude } = req.body;
+    let { provinceName, districtName, wardName, detail, postalCode, longitude, latitude, addressCode } = req.body;
     if (!longitude || !latitude) {
-      const address = `${wardName} ${districtName} ${provinceName}`;
-      const getGeoCodingResult = await geocodingByGeocodeMap(address);
-      latitude = getGeoCodingResult.latitude;
-      longitude = getGeoCodingResult.longitude;
+      const address = `${wardName}, ${districtName}, ${provinceName}`;
+      const apiServices = [
+        () => geocodingByDistanceMatrix(address as string),
+        () => geocodingByGoong(address as string)
+      ];
+
+      const randomApiServiceIndex = Math.floor(Math.random() * apiServices.length);
+      await apiServices[randomApiServiceIndex]()
+        .then((getGeoCodingResult) => {
+          latitude = getGeoCodingResult.latitude;
+          longitude = getGeoCodingResult.longitude;
+        })
+        .catch(() => {});
     }
+
     const addressPayload: addressSchemaType = {
       provinceName,
       districtName,
       wardName,
       detail,
       longitude,
-      latitude
+      latitude,
+      addressCode
     };
     await updateAddressById(Number(addressId), addressPayload);
     const getAddressResult = await searchAddressByConditions({
@@ -428,6 +449,24 @@ export const setDefaultAddress = async (req: Request, res: Response, next: NextF
     );
 
     return new ApiResponse(StatusCodes.OK, 'Update default address successfully!', { addressId }).send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getUserDefaultAddress = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { userId } = req.params;
+    if (!userId) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
+    }
+
+    const getAddressResult = await searchAddressByConditions({
+      userId: { operator: 'eq', value: Number(userId) },
+      isDefault: { operator: 'eq', value: true }
+    });
+
+    return new ApiResponse(StatusCodes.OK, ReasonPhrases.OK, getAddressResult?.[0]).send(res);
   } catch (error) {
     next(error);
   }
