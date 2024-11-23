@@ -1,0 +1,1 @@
+ALTER TABLE `posts` MODIFY COLUMN `expiration_after_unit` enum('hour','day','week','month') DEFAULT 'day';

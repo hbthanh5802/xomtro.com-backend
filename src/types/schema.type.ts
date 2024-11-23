@@ -63,8 +63,9 @@ export enum postType {
 }
 
 export enum postExpirationUnit {
-  DAY = 'day',
   HOUR = 'hour',
+  DAY = 'day',
+  WEEK = 'week',
   MONTH = 'month'
 }
 
