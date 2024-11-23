@@ -1,0 +1,1 @@
+ALTER TABLE `posts` ADD `address_code` varchar(255);

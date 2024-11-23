@@ -37,6 +37,7 @@ export const room_amenities = {
   hasParking: boolean('has_parking').default(false),
   hasSecurity: boolean('has_security').default(false),
   hasElevator: boolean('has_elevator').default(false),
+  hasInternet: boolean('has_internet').default(false),
   allowPets: boolean('allow_pets').default(false)
 };
 

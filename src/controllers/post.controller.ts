@@ -1,6 +1,6 @@
 import { insertAsset } from '@/services/asset.service';
 import { deleteManyResources, uploadImage } from '@/services/fileUpload.service';
-import { geocodingByDistanceMatrix, geocodingByGeocodeMap } from '@/services/location.service';
+import { geocodingByDistanceMatrix, geocodingByGeocodeMap, geocodingByGoong } from '@/services/location.service';
 import {
   deleteManyPassPostItems,
   deletePostAssets,
@@ -122,6 +122,7 @@ export const createRentalPost = async (req: Request, res: Response, next: NextFu
       title,
       type,
       description,
+      addressCode,
       addressProvince,
       addressDistrict,
       addressWard,
@@ -146,16 +147,26 @@ export const createRentalPost = async (req: Request, res: Response, next: NextFu
       hasParking,
       hasSecurity,
       hasElevator,
+      hasInternet,
       allowPets
-    } = req.body;
+    } = cleanObject(req.body);
     const currentUser = req.currentUser!;
     const { users, users_detail } = currentUser;
 
-    if (!addressLatitude || !addressLongitude) {
-      const address = `${addressWard} ${addressDistrict} ${addressProvince}`;
-      const getGeoCodingResult = await geocodingByGeocodeMap(address);
-      addressLatitude = getGeoCodingResult.latitude;
-      addressLongitude = getGeoCodingResult.longitude;
+    if (!addressLongitude || !addressLatitude) {
+      const address = `${addressWard}, ${addressDistrict}, ${addressProvince}`;
+      const apiServices = [
+        () => geocodingByDistanceMatrix(address as string),
+        () => geocodingByGoong(address as string)
+      ];
+
+      const randomApiServiceIndex = Math.floor(Math.random() * apiServices.length);
+      await apiServices[randomApiServiceIndex]()
+        .then((getGeoCodingResult) => {
+          addressLatitude = getGeoCodingResult.latitude;
+          addressLongitude = getGeoCodingResult.longitude;
+        })
+        .catch(() => {});
     }
 
     const insertPostPayload: postSchemaType = {
@@ -165,10 +176,12 @@ export const createRentalPost = async (req: Request, res: Response, next: NextFu
       titleSlug: generateSlug(title),
       note,
       description,
+      addressCode,
       addressProvince,
       addressDistrict,
       addressWard,
       addressDetail,
+      addressSlug: generateSlug(`${addressWard} ${addressDistrict} ${addressProvince}`),
       addressLongitude,
       addressLatitude,
       expirationAfter,
@@ -186,15 +199,16 @@ export const createRentalPost = async (req: Request, res: Response, next: NextFu
       minLeaseTermUnit,
       totalArea: Number(totalArea),
       totalAreaUnit,
-      hasFurniture: !!Number(hasFurniture),
-      hasAirConditioner: !!Number(hasAirConditioner),
-      hasWashingMachine: !!Number(hasWashingMachine),
-      hasRefrigerator: !!Number(hasRefrigerator),
-      hasPrivateBathroom: !!Number(hasPrivateBathroom),
-      hasParking: !!Number(hasParking),
-      hasSecurity: !!Number(hasSecurity),
-      hasElevator: !!Number(hasElevator),
-      allowPets: !!Number(allowPets)
+      hasFurniture,
+      hasAirConditioner,
+      hasWashingMachine,
+      hasRefrigerator,
+      hasPrivateBathroom,
+      hasParking,
+      hasSecurity,
+      hasElevator,
+      hasInternet,
+      allowPets
     };
     await insertRentalPost(cleanObject(insertRentalPostPayload) as rentalPostSchemaType);
 
@@ -550,6 +564,8 @@ export const searchPosts = async (req: Request, res: Response, next: NextFunctio
       hasParking,
       hasSecurity,
       hasElevator,
+      hasInternet,
+      ownerId,
       allowPets
     } = whereConditions;
     const { createdAt, price } = orderConditions;
@@ -584,6 +600,12 @@ export const searchPosts = async (req: Request, res: Response, next: NextFunctio
         status: {
           operator: 'eq',
           value: status
+        }
+      }),
+      ...(ownerId && {
+        ownerId: {
+          operator: 'eq',
+          value: Number(ownerId)
         }
       }),
       ...(title && {
@@ -677,6 +699,12 @@ export const searchPosts = async (req: Request, res: Response, next: NextFunctio
       }),
       ...(hasElevator && {
         hasElevator: {
+          operator: 'eq',
+          value: true
+        }
+      }),
+      ...(hasInternet && {
+        hasInternet: {
           operator: 'eq',
           value: true
         }

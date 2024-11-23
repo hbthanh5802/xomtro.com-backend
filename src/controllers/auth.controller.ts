@@ -360,7 +360,7 @@ export const completeForgotPassword = async (req: Request, res: Response, next: 
       expirationTime: timeInVietNam().toDate()
     });
     if (!existingOtpCode.length) {
-      return new ApiResponse(StatusCodes.FORBIDDEN, 'OTP is expired!').send(res);
+      return new ApiResponse(StatusCodes.UNAUTHORIZED, 'OTP is expired!').send(res);
     }
     // Check validation
     if (password !== confirmPassword) {

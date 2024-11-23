@@ -157,15 +157,17 @@ export const posts = mysqlTable('posts', {
   titleSlug: varchar('title_slug', { length: 255 }),
   description: text(),
   expirationAfter: int('expiration_after'),
-  expirationAfterUnit: mysqlEnum('expiration_after_unit', ['day', 'hour', 'minute']).default('day'),
+  expirationAfterUnit: mysqlEnum('expiration_after_unit', ['hour', 'day', 'week', 'month']).default('day'),
   status: mysqlEnum(['actived', 'unactived']).default('actived'),
   type: mysqlEnum(['rental', 'pass', 'join', 'wanted']).notNull(),
   note: text(),
   viewedCount: int('viewed_count').default(0),
+  addressCode: varchar('address_code', { length: 255 }),
   addressProvince: varchar('address_province', { length: 255 }).notNull(),
   addressDistrict: varchar('address_district', { length: 255 }).notNull(),
   addressDetail: varchar('address_detail', { length: 255 }),
   addressWard: varchar('address_ward', { length: 255 }).notNull(),
+  addressSlug: varchar('address_slug', { length: 255 }),
   addressLongitude: decimal('address_longitude', { precision: 11, scale: 8 }),
   addressLatitude: decimal('address_latitude', { precision: 10, scale: 8 }),
   ...timestamps
@@ -202,7 +204,7 @@ export const rentalPosts = mysqlTable('rental_posts', {
     }),
   priceStart: int('price_start').notNull(),
   priceEnd: int('price_end'),
-  priceUnit: mysqlEnum('price_unit', ['vnd', 'usd']).notNull(),
+  priceUnit: mysqlEnum('price_unit', ['vnd', 'usd']).default('vnd'),
   minLeaseTerm: int('min_lease_term').notNull(),
   minLeaseTermUnit: mysqlEnum('min_lease_term_unit', ['hour', 'day', 'month', 'year']).notNull(),
   totalArea: float('total_area'),
@@ -220,7 +222,7 @@ export const wantedPosts = mysqlTable('wanted_posts', {
     }),
   priceStart: int('price_start').notNull(),
   priceEnd: int('price_end'),
-  priceUnit: mysqlEnum('price_unit', ['vnd', 'usd']).notNull(),
+  priceUnit: mysqlEnum('price_unit', ['vnd', 'usd']).default('vnd'),
   moveInDate: date('move_in_date').notNull(),
   totalArea: float('total_area'),
   totalAreaUnit: mysqlEnum(['cm2', 'm2', 'km2']).default('m2'),
@@ -237,7 +239,7 @@ export const joinPosts = mysqlTable('join_posts', {
     }),
   priceStart: int('price_start').notNull(),
   priceEnd: int('price_end'),
-  priceUnit: mysqlEnum('price_unit', ['vnd', 'usd']).notNull(),
+  priceUnit: mysqlEnum('price_unit', ['vnd', 'usd']).default('vnd'),
   moveInDate: date('move_in_date').notNull(),
   totalArea: float('total_area'),
   totalAreaUnit: mysqlEnum(['cm2', 'm2', 'km2']).default('m2'),
@@ -254,7 +256,7 @@ export const passPosts = mysqlTable('pass_posts', {
     }),
   priceStart: int('price_start').notNull(),
   priceEnd: int('price_end'),
-  priceUnit: mysqlEnum('price_unit', ['vnd', 'usd']).notNull()
+  priceUnit: mysqlEnum('price_unit', ['vnd', 'usd']).default('vnd')
 });
 
 export const passPostItems = mysqlTable('pass_post_items', {

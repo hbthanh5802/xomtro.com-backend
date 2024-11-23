@@ -33,9 +33,26 @@ export const generateSlug = (str: string) => {
 };
 
 export const cleanObject = (obj: Record<string, any>) => {
-  return Object.fromEntries(
-    Object.entries(obj).filter(([_, value]) => value != null && value !== '' && !Number.isNaN(value))
+  const parseValue = (value: any) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    if (value === 'null') return null;
+    if (value === 'undefined') return undefined;
+    // if (!isNaN(Number(value)) && value !== '') return Number(value);
+    return value;
+  };
+
+  let transformedData = structuredClone(obj);
+  transformedData = Object.fromEntries(
+    Object.entries(transformedData)
+      .filter(
+        ([_, value]) =>
+          value !== null && value !== '' && !Number.isNaN(value) && value !== undefined && value !== 'undefined'
+      )
+      .map(([key, value]) => [key, parseValue(value)])
   );
+
+  return transformedData;
 };
 
 export const generateRandomPassword = (
