@@ -71,6 +71,13 @@
       "when": 1732200977081,
       "tag": "0009_fuzzy_marvel_boy",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1732365019239,
+      "tag": "0010_sparkling_junta",
+      "breakpoints": true
     }
   ]
 }

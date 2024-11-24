@@ -1,0 +1,1 @@
+ALTER TABLE `rental_posts` ADD `number_room_available` int DEFAULT 1;

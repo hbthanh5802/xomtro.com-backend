@@ -45,6 +45,7 @@ router.post(
 router.post('/search/pass', postController.searchPassPosts);
 // Search others post type
 router.post('/search/:type', postController.searchPosts);
+
 // Change post status
 router.put('/:postId/status', authMiddleware.verifyUser, postController.hiddenPostById);
 // Increase post view
@@ -52,8 +53,9 @@ router.put('/:postId/view', postController.updateViewCount);
 // Update existing rental post
 router.put(
   '/rental/:postId',
-  authMiddleware.verifyUser,
+  authMiddleware.verifyLandlord,
   uploadMiddleware.array('assets'),
+  validationAsync(insertRentalPostValidation),
   postController.updateRentalPost
 );
 // Update existing wanted post

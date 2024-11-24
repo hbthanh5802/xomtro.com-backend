@@ -202,6 +202,7 @@ export const rentalPosts = mysqlTable('rental_posts', {
       onDelete: 'cascade',
       onUpdate: 'cascade'
     }),
+  numberRoomAvailable: int('number_room_available').default(1),
   priceStart: int('price_start').notNull(),
   priceEnd: int('price_end'),
   priceUnit: mysqlEnum('price_unit', ['vnd', 'usd']).default('vnd'),
