@@ -2,9 +2,22 @@ import { posts, rentalPosts } from '@/models/schema';
 import { createInsertSchema } from 'drizzle-zod';
 import z from 'zod';
 
-export const insertPostValidation = createInsertSchema(posts);
+export const insertPostValidation = createInsertSchema(posts, {
+  expirationAfter: z.preprocess((value) => {
+    if (typeof value === 'string' && !isNaN(Number(value))) {
+      return Number(value);
+    }
+    return value;
+  }, z.number())
+});
 export const insertRentalPostValidation = insertPostValidation.and(
   createInsertSchema(rentalPosts, {
+    numberRoomAvailable: z.preprocess((value) => {
+      if (typeof value === 'string' && !isNaN(Number(value))) {
+        return Number(value);
+      }
+      return value;
+    }, z.number()),
     minLeaseTerm: z.preprocess((value) => {
       if (typeof value === 'string' && !isNaN(Number(value))) {
         return Number(value);

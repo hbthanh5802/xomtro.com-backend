@@ -133,7 +133,8 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
     res.cookie('refreshToken', refreshToken, {
       secure: false,
       httpOnly: true,
-      sameSite: 'strict'
+      sameSite: 'strict',
+      expires: timeInVietNam().add(refreshExpirationTime, 'second').toDate()
     });
 
     const responseData = {
@@ -179,7 +180,8 @@ export const refreshUserToken = async (req: Request, res: Response, next: NextFu
     res.cookie('refreshToken', newRefreshToken, {
       sameSite: 'strict',
       secure: false,
-      httpOnly: true
+      httpOnly: true,
+      expires: timeInVietNam().add(refreshExpirationTime, 'second').toDate()
     });
 
     const responseData = { meta: { accessToken: newAccessToken, refreshToken: newRefreshToken } };
@@ -288,7 +290,8 @@ export const googleAuth = async (req: Request, res: Response, next: NextFunction
     res.cookie('refreshToken', refreshToken, {
       secure: false,
       httpOnly: true,
-      sameSite: 'strict'
+      sameSite: 'strict',
+      expires: timeInVietNam().add(refreshExpirationTime, 'second').toDate()
     });
 
     const responseData = {

@@ -132,6 +132,7 @@ export const createRentalPost = async (req: Request, res: Response, next: NextFu
       addressLongitude,
       addressLatitude,
       note,
+      numberRoomAvailable,
       totalArea,
       totalAreaUnit,
       priceStart,
@@ -184,18 +185,27 @@ export const createRentalPost = async (req: Request, res: Response, next: NextFu
       addressSlug: generateSlug(`${addressWard} ${addressDistrict} ${addressProvince}`),
       addressLongitude,
       addressLatitude,
-      expirationAfter,
+      ...(!!expirationAfter && { expirationAfter: expirationAfter }),
       expirationAfterUnit
     };
     const insertPostResult = await insertPost(cleanObject(insertPostPayload) as postSchemaType);
     const { id: postId } = insertPostResult[0];
 
+    if (!Number(priceEnd)) {
+      priceEnd = Number(priceStart);
+    } else if (Number(priceStart) > Number(priceEnd)) {
+      const temp = priceStart;
+      priceStart = priceEnd;
+      priceEnd = temp;
+    }
+
     const insertRentalPostPayload: rentalPostSchemaType = {
       postId,
-      priceStart,
-      priceEnd,
+      numberRoomAvailable,
+      priceStart: Number(priceStart),
+      priceEnd: Number(priceStart),
       priceUnit,
-      minLeaseTerm,
+      minLeaseTerm: Number(minLeaseTerm),
       minLeaseTermUnit,
       totalArea: Number(totalArea),
       totalAreaUnit,
@@ -574,7 +584,7 @@ export const searchPosts = async (req: Request, res: Response, next: NextFunctio
       throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid post type parameter');
     }
 
-    if (status && !Object.values(status).includes(type as postStatus)) {
+    if (status && !Object.values(postStatus).includes(status as postStatus)) {
       throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid post status parameter');
     }
 
@@ -1079,6 +1089,7 @@ export const updateRentalPost = async (req: Request, res: Response, next: NextFu
     let {
       title,
       description,
+      addressCode,
       addressProvince,
       addressDistrict,
       addressWard,
@@ -1088,6 +1099,7 @@ export const updateRentalPost = async (req: Request, res: Response, next: NextFu
       addressLongitude,
       addressLatitude,
       note,
+      numberRoomAvailable,
       totalArea,
       totalAreaUnit,
       priceStart,
@@ -1103,8 +1115,9 @@ export const updateRentalPost = async (req: Request, res: Response, next: NextFu
       hasParking,
       hasSecurity,
       hasElevator,
+      hasInternet,
       allowPets
-    } = req.body;
+    } = cleanObject(req.body);
     const currentUser = req.currentUser;
     const { users_detail } = currentUser!;
     const postId = req.params.postId;
@@ -1127,17 +1140,35 @@ export const updateRentalPost = async (req: Request, res: Response, next: NextFu
       throw new ApiError(StatusCodes.FORBIDDEN, ReasonPhrases.FORBIDDEN);
     }
 
-    if (!addressLatitude || !addressLongitude) {
-      const address = `${addressWard} ${addressDistrict} ${addressProvince}`;
-      const getGeoCodingResult = await geocodingByGeocodeMap(address);
-      addressLatitude = getGeoCodingResult.latitude;
-      addressLongitude = getGeoCodingResult.longitude;
+    if (!addressLongitude || !addressLatitude) {
+      const address = `${addressWard}, ${addressDistrict}, ${addressProvince}`;
+      const apiServices = [
+        () => geocodingByDistanceMatrix(address as string),
+        () => geocodingByGoong(address as string)
+      ];
+
+      const randomApiServiceIndex = Math.floor(Math.random() * apiServices.length);
+      await apiServices[randomApiServiceIndex]()
+        .then((getGeoCodingResult) => {
+          addressLatitude = getGeoCodingResult.latitude;
+          addressLongitude = getGeoCodingResult.longitude;
+        })
+        .catch(() => {});
+    }
+
+    if (!Number(priceEnd)) {
+      priceEnd = Number(priceStart);
+    } else if (Number(priceStart) > Number(priceEnd)) {
+      const temp = priceStart;
+      priceStart = priceEnd;
+      priceEnd = temp;
     }
 
     const updatePostPayload: Partial<postSchemaType> = {
       title,
       titleSlug: generateSlug(title),
       note,
+      addressCode,
       description,
       addressProvince,
       addressDistrict,
@@ -1149,23 +1180,26 @@ export const updateRentalPost = async (req: Request, res: Response, next: NextFu
       expirationAfterUnit
     };
     const updatePostDetailPayload: Partial<rentalPostSchemaType> = {
-      priceStart,
-      priceEnd,
+      numberRoomAvailable,
+      priceStart: Number(priceStart),
+      priceEnd: Number(priceStart),
       priceUnit,
-      minLeaseTerm,
+      minLeaseTerm: Number(minLeaseTerm),
       minLeaseTermUnit,
       totalArea: Number(totalArea),
       totalAreaUnit,
-      hasFurniture: !!Number(hasFurniture),
-      hasAirConditioner: !!Number(hasAirConditioner),
-      hasWashingMachine: !!Number(hasWashingMachine),
-      hasRefrigerator: !!Number(hasRefrigerator),
-      hasPrivateBathroom: !!Number(hasPrivateBathroom),
-      hasParking: !!Number(hasParking),
-      hasSecurity: !!Number(hasSecurity),
-      hasElevator: !!Number(hasElevator),
-      allowPets: !!Number(allowPets)
+      hasFurniture,
+      hasAirConditioner,
+      hasWashingMachine,
+      hasRefrigerator,
+      hasPrivateBathroom,
+      hasParking,
+      hasSecurity,
+      hasElevator,
+      hasInternet,
+      allowPets
     };
+
     await Promise.all([
       updatePostById(post.id, cleanObject(updatePostPayload)),
       updateRentalPostByPostId(post.id, cleanObject(updatePostDetailPayload))
