@@ -1257,15 +1257,16 @@ export const updateWantedPost = async (req: Request, res: Response, next: NextFu
     let {
       title,
       description,
+      addressCode,
       addressProvince,
       addressDistrict,
       addressWard,
       addressDetail,
+      addressLongitude,
+      addressLatitude,
       moveInDate,
       expirationAfter,
       expirationAfterUnit,
-      addressLongitude,
-      addressLatitude,
       note,
       totalArea,
       totalAreaUnit,
@@ -1280,6 +1281,7 @@ export const updateWantedPost = async (req: Request, res: Response, next: NextFu
       hasParking,
       hasSecurity,
       hasElevator,
+      hasInternet,
       allowPets
     } = req.body;
     const currentUser = req.currentUser;
@@ -1292,6 +1294,14 @@ export const updateWantedPost = async (req: Request, res: Response, next: NextFu
 
     if (isNaN(Date.parse(moveInDate))) {
       throw new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, 'moveInDate value is invalid');
+    }
+
+    if (!Number(priceEnd)) {
+      priceEnd = Number(priceStart);
+    } else if (Number(priceStart) > Number(priceEnd)) {
+      const temp = priceStart;
+      priceStart = priceEnd;
+      priceEnd = temp;
     }
 
     const existingPostResult = await selectPostById(Number(postId));
@@ -1308,11 +1318,20 @@ export const updateWantedPost = async (req: Request, res: Response, next: NextFu
       throw new ApiError(StatusCodes.FORBIDDEN, ReasonPhrases.FORBIDDEN);
     }
 
-    if (!addressLatitude || !addressLongitude) {
-      const address = `${addressWard} ${addressDistrict} ${addressProvince}`;
-      const getGeoCodingResult = await geocodingByGeocodeMap(address);
-      addressLatitude = getGeoCodingResult.latitude;
-      addressLongitude = getGeoCodingResult.longitude;
+    if (!addressLongitude || !addressLatitude) {
+      const address = `${addressWard}, ${addressDistrict}, ${addressProvince}`;
+      const apiServices = [
+        () => geocodingByDistanceMatrix(address as string),
+        () => geocodingByGoong(address as string)
+      ];
+
+      const randomApiServiceIndex = Math.floor(Math.random() * apiServices.length);
+      await apiServices[randomApiServiceIndex]()
+        .then((getGeoCodingResult) => {
+          addressLatitude = getGeoCodingResult.latitude;
+          addressLongitude = getGeoCodingResult.longitude;
+        })
+        .catch(() => {});
     }
 
     const updatePostPayload: Partial<postSchemaType> = {
@@ -1320,6 +1339,7 @@ export const updateWantedPost = async (req: Request, res: Response, next: NextFu
       titleSlug: generateSlug(title),
       note,
       description,
+      addressCode,
       addressProvince,
       addressDistrict,
       addressWard,
@@ -1330,21 +1350,22 @@ export const updateWantedPost = async (req: Request, res: Response, next: NextFu
       expirationAfterUnit
     };
     const updatePostDetailPayload: Partial<wantedPostSchemaType> = {
-      priceStart,
-      priceEnd,
+      priceStart: Number(priceStart),
+      priceEnd: Number(priceStart),
       priceUnit,
       moveInDate: new Date(moveInDate),
       totalArea: Number(totalArea),
       totalAreaUnit,
-      hasFurniture: !!Number(hasFurniture),
-      hasAirConditioner: !!Number(hasAirConditioner),
-      hasWashingMachine: !!Number(hasWashingMachine),
-      hasRefrigerator: !!Number(hasRefrigerator),
-      hasPrivateBathroom: !!Number(hasPrivateBathroom),
-      hasParking: !!Number(hasParking),
-      hasSecurity: !!Number(hasSecurity),
-      hasElevator: !!Number(hasElevator),
-      allowPets: !!Number(allowPets)
+      hasFurniture,
+      hasAirConditioner,
+      hasWashingMachine,
+      hasRefrigerator,
+      hasPrivateBathroom,
+      hasParking,
+      hasSecurity,
+      hasElevator,
+      hasInternet,
+      allowPets
     };
     await Promise.all([
       updatePostById(post.id, cleanObject(updatePostPayload)),
