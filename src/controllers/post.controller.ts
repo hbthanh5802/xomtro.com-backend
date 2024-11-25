@@ -244,6 +244,7 @@ export const createWantedPost = async (req: Request, res: Response, next: NextFu
       description,
       addressProvince,
       addressDistrict,
+      addressCode,
       addressWard,
       addressDetail,
       expirationAfter,
@@ -251,6 +252,8 @@ export const createWantedPost = async (req: Request, res: Response, next: NextFu
       addressLongitude,
       addressLatitude,
       note,
+      totalArea,
+      totalAreaUnit,
       priceStart,
       priceEnd,
       priceUnit,
@@ -263,31 +266,44 @@ export const createWantedPost = async (req: Request, res: Response, next: NextFu
       hasParking,
       hasSecurity,
       hasElevator,
+      hasInternet,
       allowPets
-    } = req.body;
+    } = cleanObject(req.body);
     const currentUser = req.currentUser!;
     const { users } = currentUser;
 
-    if (!addressLatitude || !addressLongitude) {
-      const address = `${addressWard} ${addressDistrict} ${addressProvince}`;
-      const getGeoCodingResult = await geocodingByGeocodeMap(address);
-      addressLatitude = getGeoCodingResult.latitude;
-      addressLongitude = getGeoCodingResult.longitude;
+    if (!addressLongitude || !addressLatitude) {
+      const address = `${addressWard}, ${addressDistrict}, ${addressProvince}`;
+      const apiServices = [
+        () => geocodingByDistanceMatrix(address as string),
+        () => geocodingByGoong(address as string)
+      ];
+
+      const randomApiServiceIndex = Math.floor(Math.random() * apiServices.length);
+      await apiServices[randomApiServiceIndex]()
+        .then((getGeoCodingResult) => {
+          addressLatitude = getGeoCodingResult.latitude;
+          addressLongitude = getGeoCodingResult.longitude;
+        })
+        .catch(() => {});
     }
 
     const insertPostPayload: postSchemaType = {
       ownerId: users.id,
       type: 'wanted',
       title,
+      titleSlug: generateSlug(title),
       note,
       description,
+      addressCode,
       addressProvince,
       addressDistrict,
       addressWard,
+      addressSlug: generateSlug(`${addressWard} ${addressDistrict} ${addressProvince}`),
       addressDetail,
       addressLongitude,
       addressLatitude,
-      expirationAfter,
+      ...(!!expirationAfter && { expirationAfter: expirationAfter }),
       expirationAfterUnit
     };
     const insertPostResult = await insertPost(cleanObject(insertPostPayload) as postSchemaType);
@@ -297,21 +313,32 @@ export const createWantedPost = async (req: Request, res: Response, next: NextFu
       throw new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, 'moveInDate value is invalid');
     }
 
+    if (!Number(priceEnd)) {
+      priceEnd = Number(priceStart);
+    } else if (Number(priceStart) > Number(priceEnd)) {
+      const temp = priceStart;
+      priceStart = priceEnd;
+      priceEnd = temp;
+    }
+
     const insertWantedPostPayload: wantedPostSchemaType = {
       postId,
-      priceStart,
-      priceEnd,
+      priceStart: Number(priceStart),
+      priceEnd: Number(priceStart),
       priceUnit,
       moveInDate: new Date(moveInDate),
-      hasFurniture: !!Number(hasFurniture),
-      hasAirConditioner: !!Number(hasAirConditioner),
-      hasWashingMachine: !!Number(hasWashingMachine),
-      hasRefrigerator: !!Number(hasRefrigerator),
-      hasPrivateBathroom: !!Number(hasPrivateBathroom),
-      hasParking: !!Number(hasParking),
-      hasSecurity: !!Number(hasSecurity),
-      hasElevator: !!Number(hasElevator),
-      allowPets: !!Number(allowPets)
+      totalArea: Number(totalArea),
+      totalAreaUnit,
+      hasFurniture,
+      hasAirConditioner,
+      hasWashingMachine,
+      hasRefrigerator,
+      hasPrivateBathroom,
+      hasParking,
+      hasSecurity,
+      hasElevator,
+      hasInternet,
+      allowPets
     };
     await insertWantedPost(cleanObject(insertWantedPostPayload) as wantedPostSchemaType);
 

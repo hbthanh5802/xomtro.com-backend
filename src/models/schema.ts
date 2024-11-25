@@ -2,7 +2,6 @@ import { timestamps } from '@/utils/schema.helper';
 import { sql } from 'drizzle-orm';
 import {
   boolean,
-  date,
   datetime,
   decimal,
   float,
@@ -224,7 +223,7 @@ export const wantedPosts = mysqlTable('wanted_posts', {
   priceStart: int('price_start').notNull(),
   priceEnd: int('price_end'),
   priceUnit: mysqlEnum('price_unit', ['vnd', 'usd']).default('vnd'),
-  moveInDate: date('move_in_date').notNull(),
+  moveInDate: datetime('move_in_date').notNull(),
   totalArea: float('total_area'),
   totalAreaUnit: mysqlEnum(['cm2', 'm2', 'km2']).default('m2'),
   ...room_amenities
@@ -241,7 +240,7 @@ export const joinPosts = mysqlTable('join_posts', {
   priceStart: int('price_start').notNull(),
   priceEnd: int('price_end'),
   priceUnit: mysqlEnum('price_unit', ['vnd', 'usd']).default('vnd'),
-  moveInDate: date('move_in_date').notNull(),
+  moveInDate: datetime('move_in_date').notNull(),
   totalArea: float('total_area'),
   totalAreaUnit: mysqlEnum(['cm2', 'm2', 'km2']).default('m2'),
   ...room_amenities
