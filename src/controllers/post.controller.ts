@@ -362,6 +362,7 @@ export const createJoinPost = async (req: Request, res: Response, next: NextFunc
     let {
       title,
       description,
+      addressCode,
       addressProvince,
       addressDistrict,
       addressWard,
@@ -385,16 +386,38 @@ export const createJoinPost = async (req: Request, res: Response, next: NextFunc
       hasParking,
       hasSecurity,
       hasElevator,
+      hasInternet,
       allowPets
-    } = req.body;
+    } = cleanObject(req.body);
     const currentUser = req.currentUser!;
     const { users } = currentUser;
 
-    if (!addressLatitude || !addressLongitude) {
-      const address = `${addressWard} ${addressDistrict} ${addressProvince}`;
-      const getGeoCodingResult = await geocodingByGeocodeMap(address);
-      addressLatitude = getGeoCodingResult.latitude;
-      addressLongitude = getGeoCodingResult.longitude;
+    if (isNaN(Date.parse(moveInDate))) {
+      throw new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, 'moveInDate value is invalid');
+    }
+
+    if (!Number(priceEnd)) {
+      priceEnd = Number(priceStart);
+    } else if (Number(priceStart) > Number(priceEnd)) {
+      const temp = priceStart;
+      priceStart = priceEnd;
+      priceEnd = temp;
+    }
+
+    if (!addressLongitude || !addressLatitude) {
+      const address = `${addressWard}, ${addressDistrict}, ${addressProvince}`;
+      const apiServices = [
+        () => geocodingByDistanceMatrix(address as string),
+        () => geocodingByGoong(address as string)
+      ];
+
+      const randomApiServiceIndex = Math.floor(Math.random() * apiServices.length);
+      await apiServices[randomApiServiceIndex]()
+        .then((getGeoCodingResult) => {
+          addressLatitude = getGeoCodingResult.latitude;
+          addressLongitude = getGeoCodingResult.longitude;
+        })
+        .catch(() => {});
     }
 
     const insertPostPayload: postSchemaType = {
@@ -404,40 +427,39 @@ export const createJoinPost = async (req: Request, res: Response, next: NextFunc
       titleSlug: generateSlug(title),
       note,
       description,
+      addressCode,
       addressProvince,
       addressDistrict,
       addressWard,
       addressDetail,
+      addressSlug: generateSlug(`${addressWard} ${addressDistrict} ${addressProvince}`),
       addressLongitude,
       addressLatitude,
-      expirationAfter,
+      ...(!!expirationAfter && { expirationAfter: expirationAfter }),
       expirationAfterUnit
     };
-
-    if (isNaN(Date.parse(moveInDate))) {
-      throw new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, 'moveInDate value is invalid');
-    }
 
     const insertPostResult = await insertPost(insertPostPayload);
     const { id: postId } = insertPostResult[0];
 
     const insertWantedPostPayload: joinPostSchemaType = {
       postId,
-      priceStart,
-      priceEnd,
+      priceStart: Number(priceStart),
+      priceEnd: Number(priceStart),
       priceUnit,
+      moveInDate: new Date(moveInDate),
       totalArea: Number(totalArea),
       totalAreaUnit,
-      moveInDate: new Date(moveInDate),
-      hasFurniture: !!Number(hasFurniture),
-      hasAirConditioner: !!Number(hasAirConditioner),
-      hasWashingMachine: !!Number(hasWashingMachine),
-      hasRefrigerator: !!Number(hasRefrigerator),
-      hasPrivateBathroom: !!Number(hasPrivateBathroom),
-      hasParking: !!Number(hasParking),
-      hasSecurity: !!Number(hasSecurity),
-      hasElevator: !!Number(hasElevator),
-      allowPets: !!Number(allowPets)
+      hasFurniture,
+      hasAirConditioner,
+      hasWashingMachine,
+      hasRefrigerator,
+      hasPrivateBathroom,
+      hasParking,
+      hasSecurity,
+      hasElevator,
+      hasInternet,
+      allowPets
     };
 
     await insertJoinPost(cleanObject(insertWantedPostPayload) as joinPostSchemaType);
@@ -462,6 +484,7 @@ export const createPassPost = async (req: Request, res: Response, next: NextFunc
     let {
       title,
       description,
+      addressCode,
       addressProvince,
       addressDistrict,
       addressWard,
@@ -477,13 +500,21 @@ export const createPassPost = async (req: Request, res: Response, next: NextFunc
     const currentUser = req.currentUser!;
     const { users } = currentUser;
 
-    if (!addressLatitude || !addressLongitude) {
-      const address = `${addressWard} ${addressDistrict} ${addressProvince}`;
-      const getGeoCodingResult = await geocodingByGeocodeMap(address);
-      addressLatitude = getGeoCodingResult.latitude;
-      addressLongitude = getGeoCodingResult.longitude;
-    }
+    if (!addressLongitude || !addressLatitude) {
+      const address = `${addressWard}, ${addressDistrict}, ${addressProvince}`;
+      const apiServices = [
+        () => geocodingByDistanceMatrix(address as string),
+        () => geocodingByGoong(address as string)
+      ];
 
+      const randomApiServiceIndex = Math.floor(Math.random() * apiServices.length);
+      await apiServices[randomApiServiceIndex]()
+        .then((getGeoCodingResult) => {
+          addressLatitude = getGeoCodingResult.latitude;
+          addressLongitude = getGeoCodingResult.longitude;
+        })
+        .catch(() => {});
+    }
     if (!passItems || !Array.isArray(passItems) || !passItems.length) {
       throw new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, 'passItems can not be empty');
     }
@@ -497,6 +528,7 @@ export const createPassPost = async (req: Request, res: Response, next: NextFunc
       titleSlug: generateSlug(title),
       note,
       description,
+      addressCode,
       addressProvince,
       addressDistrict,
       addressWard,
@@ -1397,6 +1429,7 @@ export const updateJoinPost = async (req: Request, res: Response, next: NextFunc
     let {
       title,
       description,
+      addressCode,
       addressProvince,
       addressDistrict,
       addressWard,
@@ -1420,6 +1453,7 @@ export const updateJoinPost = async (req: Request, res: Response, next: NextFunc
       hasParking,
       hasSecurity,
       hasElevator,
+      hasInternet,
       allowPets
     } = req.body;
     const currentUser = req.currentUser;
@@ -1460,6 +1494,7 @@ export const updateJoinPost = async (req: Request, res: Response, next: NextFunc
       titleSlug: generateSlug(title),
       note,
       description,
+      addressCode,
       addressProvince,
       addressDistrict,
       addressWard,
@@ -1470,21 +1505,22 @@ export const updateJoinPost = async (req: Request, res: Response, next: NextFunc
       expirationAfterUnit
     };
     const updatePostDetailPayload: Partial<joinPostSchemaType> = {
-      priceStart,
-      priceEnd,
+      priceStart: Number(priceStart),
+      priceEnd: Number(priceStart),
       priceUnit,
       moveInDate: new Date(moveInDate),
       totalArea: Number(totalArea),
       totalAreaUnit,
-      hasFurniture: !!Number(hasFurniture),
-      hasAirConditioner: !!Number(hasAirConditioner),
-      hasWashingMachine: !!Number(hasWashingMachine),
-      hasRefrigerator: !!Number(hasRefrigerator),
-      hasPrivateBathroom: !!Number(hasPrivateBathroom),
-      hasParking: !!Number(hasParking),
-      hasSecurity: !!Number(hasSecurity),
-      hasElevator: !!Number(hasElevator),
-      allowPets: !!Number(allowPets)
+      hasFurniture,
+      hasAirConditioner,
+      hasWashingMachine,
+      hasRefrigerator,
+      hasPrivateBathroom,
+      hasParking,
+      hasSecurity,
+      hasElevator,
+      hasInternet,
+      allowPets
     };
     await Promise.all([
       updatePostById(post.id, cleanObject(updatePostPayload)),
