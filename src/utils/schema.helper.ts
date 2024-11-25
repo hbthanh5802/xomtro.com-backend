@@ -134,7 +134,7 @@ export const paginationHelper = ({ total, page, pageSize }: { total: number; pag
 };
 
 export const checkUserAndPostPermission = (role: string, type: string) => {
-  if (role === userRole.LANDLORD && type === postType.RENTAL) {
+  if (role === userRole.LANDLORD && [postType.RENTAL, postType.PASS].includes(type as postType)) {
     return true;
   }
   if (role === userRole.RENTER && [postType.JOIN, postType.PASS, postType.WANTED].includes(type as postType)) {

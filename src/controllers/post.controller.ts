@@ -12,6 +12,7 @@ import {
   insertPostAssets,
   insertRentalPost,
   insertWantedPost,
+  removeAllPassPostItemByPostId,
   selectFullPostDetailById,
   selectJoinPostByConditionType,
   selectJoinPostByConditions,
@@ -496,7 +497,7 @@ export const createPassPost = async (req: Request, res: Response, next: NextFunc
       note,
       priceUnit,
       passItems
-    } = req.body;
+    } = cleanObject(req.body);
     const currentUser = req.currentUser!;
     const { users } = currentUser;
 
@@ -515,6 +516,11 @@ export const createPassPost = async (req: Request, res: Response, next: NextFunc
         })
         .catch(() => {});
     }
+
+    if (passItems) {
+      passItems = JSON.parse(passItems);
+    }
+
     if (!passItems || !Array.isArray(passItems) || !passItems.length) {
       throw new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, 'passItems can not be empty');
     }
@@ -533,9 +539,10 @@ export const createPassPost = async (req: Request, res: Response, next: NextFunc
       addressDistrict,
       addressWard,
       addressDetail,
+      addressSlug: generateSlug(`${addressWard} ${addressDistrict} ${addressProvince}`),
       addressLongitude,
       addressLatitude,
-      expirationAfter,
+      ...(!!expirationAfter && { expirationAfter: expirationAfter }),
       expirationAfterUnit
     };
     const insertPostResult = await insertPost(insertPostPayload);
@@ -873,6 +880,7 @@ export const searchPassPosts = async (req: Request, res: Response, next: NextFun
     }
     const {
       title,
+      ownerId,
       status,
       passItemName,
       passItemStatus,
@@ -887,7 +895,7 @@ export const searchPassPosts = async (req: Request, res: Response, next: NextFun
     } = whereConditions;
     const { createdAt, price } = orderConditions;
 
-    if (status && !Object.values(status).includes(status as postStatus)) {
+    if (status && !Object.values(postStatus).includes(status as postStatus)) {
       throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid post status parameter');
     }
 
@@ -915,6 +923,12 @@ export const searchPassPosts = async (req: Request, res: Response, next: NextFun
         status: {
           operator: 'eq',
           value: status
+        }
+      }),
+      ...(ownerId && {
+        ownerId: {
+          operator: 'eq',
+          value: Number(ownerId)
         }
       }),
       ...(title && {
@@ -1227,15 +1241,16 @@ export const updateRentalPost = async (req: Request, res: Response, next: NextFu
       title,
       titleSlug: generateSlug(title),
       note,
-      addressCode,
       description,
+      addressCode,
       addressProvince,
       addressDistrict,
       addressWard,
       addressDetail,
+      addressSlug: generateSlug(`${addressWard} ${addressDistrict} ${addressProvince}`),
       addressLongitude,
       addressLatitude,
-      expirationAfter,
+      ...(!!expirationAfter && { expirationAfter: expirationAfter }),
       expirationAfterUnit
     };
     const updatePostDetailPayload: Partial<rentalPostSchemaType> = {
@@ -1376,9 +1391,10 @@ export const updateWantedPost = async (req: Request, res: Response, next: NextFu
       addressDistrict,
       addressWard,
       addressDetail,
+      addressSlug: generateSlug(`${addressWard} ${addressDistrict} ${addressProvince}`),
       addressLongitude,
       addressLatitude,
-      expirationAfter,
+      ...(!!expirationAfter && { expirationAfter: expirationAfter }),
       expirationAfterUnit
     };
     const updatePostDetailPayload: Partial<wantedPostSchemaType> = {
@@ -1499,14 +1515,15 @@ export const updateJoinPost = async (req: Request, res: Response, next: NextFunc
       addressDistrict,
       addressWard,
       addressDetail,
+      addressSlug: generateSlug(`${addressWard} ${addressDistrict} ${addressProvince}`),
       addressLongitude,
       addressLatitude,
-      expirationAfter,
+      ...(!!expirationAfter && { expirationAfter: expirationAfter }),
       expirationAfterUnit
     };
     const updatePostDetailPayload: Partial<joinPostSchemaType> = {
       priceStart: Number(priceStart),
-      priceEnd: Number(priceStart),
+      priceEnd: Number(priceEnd),
       priceUnit,
       moveInDate: new Date(moveInDate),
       totalArea: Number(totalArea),
@@ -1552,6 +1569,7 @@ export const updatePassPost = async (req: Request, res: Response, next: NextFunc
     let {
       title,
       description,
+      addressCode,
       addressProvince,
       addressDistrict,
       addressWard,
@@ -1563,7 +1581,7 @@ export const updatePassPost = async (req: Request, res: Response, next: NextFunc
       note,
       priceUnit,
       passItems
-    } = req.body;
+    } = cleanObject(req.body);
     const currentUser = req.currentUser;
     const { users_detail, users } = currentUser!;
     const postId = req.params.postId;
@@ -1586,39 +1604,54 @@ export const updatePassPost = async (req: Request, res: Response, next: NextFunc
       throw new ApiError(StatusCodes.FORBIDDEN, ReasonPhrases.FORBIDDEN);
     }
 
-    if (!addressLatitude || !addressLongitude) {
-      const address = `${addressWard} ${addressDistrict} ${addressProvince}`;
-      const getGeoCodingResult = await geocodingByGeocodeMap(address);
-      addressLatitude = getGeoCodingResult.latitude;
-      addressLongitude = getGeoCodingResult.longitude;
+    if (!addressLongitude || !addressLatitude) {
+      const address = `${addressWard}, ${addressDistrict}, ${addressProvince}`;
+      const apiServices = [
+        () => geocodingByDistanceMatrix(address as string),
+        () => geocodingByGoong(address as string)
+      ];
+
+      const randomApiServiceIndex = Math.floor(Math.random() * apiServices.length);
+      await apiServices[randomApiServiceIndex]()
+        .then((getGeoCodingResult) => {
+          addressLatitude = getGeoCodingResult.latitude;
+          addressLongitude = getGeoCodingResult.longitude;
+        })
+        .catch(() => {});
+    }
+
+    if (passItems) {
+      passItems = JSON.parse(passItems);
     }
 
     if (!passItems || !Array.isArray(passItems) || !passItems.length) {
       throw new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, 'passItems can not be empty');
     }
 
-    const passPostItemsResult = (await selectPassPostItemsByPostId(post.id)).map((passItem) => passItem.passItemPrice);
-    const passItemsPrices = passItems.map((item) => item.passItemPrice as number);
-
     const updatePostPayload: Partial<postSchemaType> = {
       title,
       titleSlug: generateSlug(title),
       note,
       description,
+      addressCode,
       addressProvince,
       addressDistrict,
       addressWard,
       addressDetail,
+      addressSlug: generateSlug(`${addressWard} ${addressDistrict} ${addressProvince}`),
       addressLongitude,
       addressLatitude,
-      expirationAfter,
+      ...(!!expirationAfter && { expirationAfter: expirationAfter }),
       expirationAfterUnit
     };
+
+    const passItemsPrice = passItems.map((item) => item.passItemPrice as number);
     const updatePassPostPayload: Partial<passPostSchemaType> = {
-      priceStart: Math.min(...passItemsPrices, ...passPostItemsResult),
-      priceEnd: Math.max(...passItemsPrices, ...passPostItemsResult),
+      priceStart: Math.min(...passItemsPrice),
+      priceEnd: Math.max(...passItemsPrice),
       priceUnit
     };
+
     const insertPassPostItemsPayload: passPostItemSchemaType[] = passItems.map((item) => {
       const { passItemName, passItemPrice, passItemStatus } = item;
       return {
@@ -1629,11 +1662,10 @@ export const updatePassPost = async (req: Request, res: Response, next: NextFunc
         passItemNameSlug: generateSlug(passItemName)
       };
     });
-    await Promise.all([
-      updatePostById(post.id, cleanObject(updatePostPayload)),
-      updatePassPostByPostId(post.id, updatePassPostPayload),
-      insertPassPostItem(insertPassPostItemsPayload)
-    ]);
+
+    await Promise.all([updatePostById(post.id, updatePostPayload), removeAllPassPostItemByPostId(post.id)]);
+    await updatePassPostByPostId(post.id, updatePassPostPayload);
+    await insertPassPostItem(insertPassPostItemsPayload);
 
     if (req.files?.length) {
       const uploadImageResult = await uploadPostImageHandler(req);

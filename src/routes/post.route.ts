@@ -4,6 +4,8 @@ import { uploadMiddleware } from '@/middlewares/upload.middleware';
 import { validationAsync } from '@/middlewares/validationSchema.middleware';
 import {
   insertJoinPostValidation,
+  insertPassPostItemValidation,
+  insertPassPostValidation,
   insertRentalPostValidation,
   insertWantedPostValidation
 } from '@/validations/postValidation';
@@ -40,9 +42,9 @@ router.post(
 // Create a new pass post
 router.post(
   '/pass',
-  authMiddleware.verifyRenter,
+  authMiddleware.verifyUser,
   uploadMiddleware.array('assets'),
-  // validationAsync(insertRentalPostValidation),
+  validationAsync(insertPassPostValidation),
   postController.createPassPost
 );
 
@@ -66,21 +68,32 @@ router.put(
 // Update existing wanted post
 router.put(
   '/wanted/:postId',
-  authMiddleware.verifyUser,
+  authMiddleware.verifyRenter,
   uploadMiddleware.array('assets'),
+  validationAsync(insertWantedPostValidation),
   postController.updateWantedPost
 );
 // Update existing join post
-router.put('/join/:postId', authMiddleware.verifyUser, uploadMiddleware.array('assets'), postController.updateJoinPost);
-// Update an existing pass post item
-router.put('/pass/:postId/items/:itemId', authMiddleware.verifyUser, postController.updatePassPostItem);
-// Update an existing pass post
-router.put('/pass/:postId', authMiddleware.verifyUser, uploadMiddleware.array('assets'), postController.updatePassPost);
-// Update existing wanted post
 router.put(
-  '/wanted/:postId',
+  '/join/:postId',
+  authMiddleware.verifyRenter,
+  uploadMiddleware.array('assets'),
+  validationAsync(insertJoinPostValidation),
+  postController.updateJoinPost
+);
+// Update an existing pass post item
+router.put(
+  '/pass/:postId/items/:itemId',
+  authMiddleware.verifyUser,
+  validationAsync(insertPassPostItemValidation),
+  postController.updatePassPostItem
+);
+// Update an existing pass post
+router.put(
+  '/pass/:postId',
   authMiddleware.verifyUser,
   uploadMiddleware.array('assets'),
+  validationAsync(insertPassPostValidation),
   postController.updatePassPost
 );
 // Remove pass post items by id list

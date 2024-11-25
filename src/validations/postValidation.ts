@@ -102,19 +102,48 @@ export const insertPassPostItemValidation = createInsertSchema(passPostItems, {
     }
     return value;
   }, z.number())
+}).pick({
+  passItemName: true,
+  passItemPrice: true,
+  passItemStatus: true
 });
 
-export const insertPassPostValidation = insertPostValidation.and(
-  createInsertSchema(passPosts)
-    .omit({
-      priceStart: true,
-      priceEnd: true
-    })
-    .and(
-      z.object({
-        passItems: z.array(insertPassPostItemValidation).min(1, {
-          message: 'passItems phải có ít nhất một phần tử'
+export const insertPassPostValidation = createInsertSchema(passPosts)
+  .omit({
+    postId: true,
+    priceStart: true,
+    priceEnd: true,
+    priceUnit: true
+  })
+  .and(insertPostValidation)
+  .and(
+    z.object({
+      passItems: z
+        .string() // Bắt đầu với chuỗi
+        .transform((val, ctx) => {
+          try {
+            // Parse chuỗi JSON thành mảng object
+            const parsed = JSON.parse(val);
+            if (!Array.isArray(parsed)) {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'passItems phải là một mảng JSON hợp lệ'
+              });
+              return z.NEVER;
+            }
+            return parsed; // Trả về mảng để tiếp tục validate
+          } catch {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: 'passItems không phải là một chuỗi JSON hợp lệ'
+            });
+            return z.NEVER;
+          }
         })
-      })
-    )
-);
+        .pipe(
+          z.array(insertPassPostItemValidation).min(1, {
+            message: 'passItems phải có ít nhất một phần tử'
+          })
+        )
+    })
+  );
