@@ -474,6 +474,40 @@ export const selectWantedPostByConditions = async <T extends selectWantedPostByC
       );
     }
 
+    // Xử lý order conditions
+    let orderClause: SQLWrapper[] = [];
+    if (options?.orderConditions) {
+      const { orderConditions } = options;
+      orderClause = Object.entries(orderConditions).map(([field, direction]) => {
+        return processOrderCondition(field, direction, { ...posts, ...rentalPosts } as any);
+      });
+    }
+
+    // BƯỚC 1: Lấy danh sách `post.id` theo pagination
+    const pagination = options?.pagination;
+    let postIdsQuery = db
+      .select({ id: posts.id })
+      .from(posts)
+      .leftJoin(rentalPosts, eq(rentalPosts.postId, posts.id))
+      .$dynamic();
+
+    if (whereClause.length) {
+      postIdsQuery = postIdsQuery.where(and(...whereClause)).$dynamic();
+    }
+    if (orderClause.length) {
+      postIdsQuery = postIdsQuery.orderBy(...(orderClause as any)).$dynamic();
+    }
+    if (options?.pagination) {
+      postIdsQuery = withPagination(postIdsQuery, pagination?.page, pagination?.pageSize);
+    }
+
+    const postIds = (await postIdsQuery).map((p) => p.id);
+
+    if (!postIds.length) {
+      // Không có kết quả phù hợp
+      return [];
+    }
+
     let query = db
       .select({
         post: posts,
@@ -487,25 +521,15 @@ export const selectWantedPostByConditions = async <T extends selectWantedPostByC
       .leftJoin(postAssets, eq(postAssets.postId, posts.id))
       .leftJoin(assetModel, eq(assetModel.id, postAssets.assetId))
       .leftJoin(wantedPosts, eq(wantedPosts.postId, posts.id))
+      .where(inArray(posts.id, postIds))
       .$dynamic();
 
-    if (whereClause?.length) {
-      query.where(and(...whereClause)).$dynamic();
+    if (orderClause.length) {
+      query = query.orderBy(...(orderClause as any)).$dynamic();
     }
-
-    if (options?.orderConditions) {
-      const { orderConditions } = options;
-      let orderClause = Object.entries(orderConditions).map(([field, direction]) => {
-        return processOrderCondition(field, direction, { ...posts, ...wantedPosts } as any);
-      });
-      query = query.orderBy(...(orderClause as any));
-    }
-
-    const pagination = options?.pagination;
-    query = withPagination(query, pagination?.page, pagination?.pageSize);
 
     const rawData = await query;
-    //
+
     const formattedResponse: fullPostResponseType[] = rawData.reduce((acc, item) => {
       let postResponseItem = acc.find((p) => p.post.id === item.post.id);
       if (!postResponseItem) {

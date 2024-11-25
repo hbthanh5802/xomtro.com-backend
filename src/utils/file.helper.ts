@@ -1,4 +1,3 @@
-import { timeInVietNam } from '@/utils/time.helper';
 import sharp, { ResizeOptions } from 'sharp';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -15,14 +14,13 @@ export const optimizeImage = async (buffer: Buffer, options?: ResizeOptions): Pr
       .resize({
         width: MAX_WIDTH,
         height: MAX_HEIGHT,
-        fit: 'contain',
-        ...(options && { ...options })
+        fit: 'contain'
       })
       .webp({
-        quality: 80,
-        effort: 5,
+        quality: 85, // Tăng mức độ chất lượng
+        effort: 4, // Giảm nỗ lực để tăng tốc xử lý
         smartSubsample: true,
-        nearLossless: true
+        nearLossless: false // Loại bỏ gần-lossless nếu muốn tối ưu hơn nữa
       })
       .toBuffer();
   } catch (error) {

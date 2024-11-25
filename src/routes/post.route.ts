@@ -2,7 +2,7 @@ import * as postController from '@/controllers/post.controller';
 import * as authMiddleware from '@/middlewares/auth.middleware';
 import { uploadMiddleware } from '@/middlewares/upload.middleware';
 import { validationAsync } from '@/middlewares/validationSchema.middleware';
-import { insertRentalPostValidation } from '@/validations/postValidation';
+import { insertRentalPostValidation, insertWantedPostValidation } from '@/validations/postValidation';
 import express from 'express';
 
 const router = express.Router();
@@ -22,7 +22,7 @@ router.post(
   '/wanted',
   authMiddleware.verifyRenter,
   uploadMiddleware.array('assets'),
-  // validationAsync(insertRentalPostValidation),
+  validationAsync(insertWantedPostValidation),
   postController.createWantedPost
 );
 // Create a new join post
@@ -41,6 +41,7 @@ router.post(
   // validationAsync(insertRentalPostValidation),
   postController.createPassPost
 );
+
 // Search pass posts
 router.post('/search/pass', postController.searchPassPosts);
 // Search others post type
