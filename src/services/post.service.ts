@@ -276,6 +276,7 @@ export const selectRentalPostByConditions = async <T extends selectRentalPostByC
       query = query.orderBy(...(orderClause as any)).$dynamic();
     }
 
+    console.log(query.toSQL());
     const rawData = await query;
 
     // Xử lý kết quả: Gom nhóm `assets` theo từng `post`

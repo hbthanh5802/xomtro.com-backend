@@ -19,6 +19,7 @@ import {
 } from '@/types/location.type';
 import ApiError from '@/utils/ApiError.helper';
 import { ApiResponse } from '@/utils/ApiResponse.helper';
+import { cleanObject } from '@/utils/constants.helper';
 import { NextFunction, Request, Response } from 'express';
 import { ReasonPhrases, StatusCodes } from 'http-status-codes';
 
@@ -151,7 +152,7 @@ export const getAutoCompleteFromSearchValue = async (req: Request, res: Response
   try {
     const { searchValue, longitude, latitude, limit, radius } = req.query;
     if (!searchValue) {
-      throw new ApiError(StatusCodes.BAD_REQUEST, 'searchValue is required');
+      throw new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, 'searchValue is required');
     }
 
     const searchPayload: locationAutoCompleteRequestPayload = {
@@ -163,7 +164,7 @@ export const getAutoCompleteFromSearchValue = async (req: Request, res: Response
       },
       radius: Number(radius)
     };
-    const result = await locationAutoCompleteByGoong(searchPayload);
+    const result = await locationAutoCompleteByGoong(cleanObject(searchPayload) as locationAutoCompleteRequestPayload);
     const { predictions } = result;
     const responseData: autoCompleteResponseType[] = predictions.map((prediction) => {
       const { description, place_id, reference, compound, terms, structured_formatting } = prediction;

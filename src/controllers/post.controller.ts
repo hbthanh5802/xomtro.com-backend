@@ -644,7 +644,7 @@ export const searchPosts = async (req: Request, res: Response, next: NextFunctio
       ownerId,
       allowPets
     } = whereConditions;
-    const { createdAt, price } = orderConditions;
+    const { createdAt, updatedAt, price } = orderConditions;
 
     if (!type || !Object.values(postType).includes(type as postType)) {
       throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid post type parameter');
@@ -727,8 +727,14 @@ export const searchPosts = async (req: Request, res: Response, next: NextFunctio
       }),
       ...(priceStart && {
         priceStart: {
-          operator: 'between',
-          value: [priceStart, priceEnd || priceStart]
+          operator: 'gte',
+          value: Number(priceStart)
+        }
+      }),
+      ...(priceEnd && {
+        priceEnd: {
+          operator: 'lte',
+          value: Number(priceEnd)
         }
       }),
       ...(hasFurniture && {
@@ -793,8 +799,14 @@ export const searchPosts = async (req: Request, res: Response, next: NextFunctio
       }),
       ...(totalAreaStart && {
         totalArea: {
-          operator: 'between',
-          value: [totalAreaStart, totalAreaEnd || totalAreaStart]
+          operator: 'gte',
+          value: totalAreaStart
+        }
+      }),
+      ...(totalAreaEnd && {
+        totalArea: {
+          operator: 'lte',
+          value: totalAreaEnd
         }
       }),
       ...(totalAreaUnit && {
@@ -814,8 +826,9 @@ export const searchPosts = async (req: Request, res: Response, next: NextFunctio
       selectWantedPostByConditionType | selectWantedPostByConditionType | selectJoinPostByConditionType
     > = {
       orderConditions: {
-        ...(createdAt && { createdAt }),
-        ...(price && { priceStart: price })
+        ...(price && { priceStart: price }),
+        ...(updatedAt && { updatedAt }),
+        ...(createdAt && { createdAt })
       },
       ...(pagination && {
         pagination: {
@@ -893,7 +906,7 @@ export const searchPassPosts = async (req: Request, res: Response, next: NextFun
       dateStart,
       dateEnd
     } = whereConditions;
-    const { createdAt, price } = orderConditions;
+    const { createdAt, updatedAt, price } = orderConditions;
 
     if (status && !Object.values(postStatus).includes(status as postStatus)) {
       throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid post status parameter');
@@ -986,8 +999,14 @@ export const searchPassPosts = async (req: Request, res: Response, next: NextFun
       }),
       ...(priceStart && {
         priceStart: {
-          operator: 'between',
-          value: [priceStart, priceEnd || priceStart]
+          operator: 'gte',
+          value: Number(priceStart)
+        }
+      }),
+      ...(priceEnd && {
+        priceEnd: {
+          operator: 'lte',
+          value: Number(priceEnd)
         }
       }),
       ...(dateStart && {
@@ -999,8 +1018,9 @@ export const searchPassPosts = async (req: Request, res: Response, next: NextFun
     };
     const options: selectOptions<selectPassPostByConditionType> = {
       orderConditions: {
-        ...(createdAt && { createdAt }),
-        ...(price && { priceStart: price })
+        ...(price && { priceStart: price }),
+        ...(updatedAt && { updatedAt }),
+        ...(createdAt && { createdAt })
       },
       ...(pagination && {
         pagination: {
