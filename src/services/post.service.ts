@@ -17,6 +17,7 @@ import { processCondition, processOrderCondition, selectOptions, withPagination 
 import { and, eq, getTableColumns, inArray, sql, SQLWrapper } from 'drizzle-orm';
 import { ReasonPhrases, StatusCodes } from 'http-status-codes';
 import {
+  AssetSelectSchemaType,
   joinPostSchemaType,
   passPostItemSchemaType,
   passPostSchemaType,
@@ -162,7 +163,10 @@ export const selectFullPostDetailById = async (
     }
 
     const post = rawData[0].post;
-    const assets = rawData.map((row) => row.asset).filter((asset) => !!asset);
+    let assets = rawData.map((row) => row.asset).filter((asset) => !!asset) as AssetSelectSchemaType[];
+    const assetMap = new Map();
+    assets.forEach((item) => assetMap.set(item.id as number, item));
+    assets = Array.from(assetMap.values());
 
     let detail: fullPostResponseType['detail'];
     let passItems: fullPostResponseType['passItems'];
@@ -336,7 +340,7 @@ export const selectJoinPostByConditions = async <T extends selectJoinPostByCondi
     if (options?.orderConditions) {
       const { orderConditions } = options;
       orderClause = Object.entries(orderConditions).map(([field, direction]) => {
-        return processOrderCondition(field, direction, { ...posts, ...wantedPosts } as any);
+        return processOrderCondition(field, direction, { ...posts, ...joinPosts } as any);
       });
     }
 
@@ -540,7 +544,7 @@ export const selectPassPostByConditions = async <T extends selectPassPostByCondi
     if (options?.orderConditions) {
       const { orderConditions } = options;
       orderClause = Object.entries(orderConditions).map(([field, direction]) => {
-        return processOrderCondition(field, direction, { ...posts, ...wantedPosts } as any);
+        return processOrderCondition(field, direction, { ...posts, ...passPosts, ...passPostItems } as any);
       });
     }
 

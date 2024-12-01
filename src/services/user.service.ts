@@ -1,7 +1,7 @@
 import { db } from '@/configs/database.config';
-import { assets, userDetail, users } from '@/models/schema';
+import { assets, userContacts, userDetail, users } from '@/models/schema';
 import { ConditionsType } from '@/types/drizzle.type';
-import { userDetailSchemaType, userSchemaType } from '@/types/schema.type';
+import { UserContactsInsertSchemaType, userDetailSchemaType, userSchemaType } from '@/types/schema.type';
 import { processCondition } from '@/utils/schema.helper';
 import { and, desc, eq, or } from 'drizzle-orm';
 
@@ -12,6 +12,10 @@ export const insertUser = async (payload: userSchemaType) => {
 
 export const insertUserDetail = async (payload: userDetailSchemaType) => {
   return db.insert(userDetail).values(payload).$returningId();
+};
+
+export const insertUserContact = async (payload: UserContactsInsertSchemaType) => {
+  return db.insert(userContacts).values(payload).$returningId();
 };
 
 // SELECT
@@ -81,6 +85,14 @@ export const selectUserAvatarByUserId = async (userId: number) => {
     .limit(1);
 };
 
+export const selectUserContactByUserId = async (userId: number) => {
+  return db.select().from(userContacts).where(eq(userContacts.userId, userId));
+};
+
+export const selectUserContactByContactId = async (contactId: number) => {
+  return db.select().from(userContacts).where(eq(userContacts.id, contactId));
+};
+
 // UPDATE
 export const updateUserDetailById = async (userId: number, payload: Partial<userDetailSchemaType>) => {
   return db.update(userDetail).set(payload).where(eq(userDetail.userId, userId)).limit(1);
@@ -88,4 +100,16 @@ export const updateUserDetailById = async (userId: number, payload: Partial<user
 
 export const updateUserById = async (userId: number, payload: Partial<userSchemaType>) => {
   return db.update(users).set(payload).where(eq(users.id, userId)).limit(1);
+};
+
+export const updateUserContactByContactId = async (
+  contactId: number,
+  payload: Partial<UserContactsInsertSchemaType>
+) => {
+  return db.update(userContacts).set(payload).where(eq(userContacts.id, contactId));
+};
+
+// DELETE
+export const deleteUserContactByContactId = async (contactId: number) => {
+  return db.delete(userContacts).where(eq(userContacts.id, contactId));
 };

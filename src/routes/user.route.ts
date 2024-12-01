@@ -6,6 +6,7 @@ import { validationAsync } from '@/middlewares/validationSchema.middleware';
 import {
   addressValidation,
   changeUserPasswordValidation,
+  insertUserContactValidation,
   updateUserProfileValidation
 } from '@/validations/userValidation';
 import express from 'express';
@@ -66,5 +67,24 @@ router.get('/:userId', userController.getUserProfile);
 
 // Get user interested posts
 router.post('/interested', authMiddlewares.verifyUser, postController.getInterestedUserPosts);
+
+// -- Contacts
+router.get('/:userId/contacts', userController.getUserContacts);
+
+router.post(
+  '/contacts',
+  authMiddlewares.verifyUser,
+  validationAsync(insertUserContactValidation),
+  userController.createUserContact
+);
+
+router.put(
+  '/contacts/:contactId',
+  authMiddlewares.verifyUser,
+  validationAsync(insertUserContactValidation),
+  userController.updateUserContact
+);
+
+router.delete('/contacts/:contactId', authMiddlewares.verifyUser, userController.removeUserContact);
 
 export default router;

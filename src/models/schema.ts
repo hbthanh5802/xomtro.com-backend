@@ -56,7 +56,10 @@ export const addresses = mysqlTable(
   'addresses',
   {
     id: int().primaryKey().autoincrement(),
-    userId: int('user_id').references(() => users.id),
+    userId: int('user_id').references(() => users.id, {
+      onDelete: 'cascade',
+      onUpdate: 'cascade'
+    }),
     addressCode: varchar('address_code', { length: 255 }),
     provinceName: varchar('province_name', { length: 255 }).notNull(),
     districtName: varchar('district_name', { length: 255 }).notNull(),
@@ -273,25 +276,25 @@ export const passPostItems = mysqlTable('pass_post_items', {
   passItemStatus: mysqlEnum('pass_item_status', ['new', 'used'])
 });
 
-export const userPostReactions = mysqlTable(
-  'user_post_reactions',
-  {
-    userId: int('user_id').references(() => users.id, {
-      onDelete: 'cascade',
-      onUpdate: 'cascade'
-    }),
-    postId: int('post_id').references(() => posts.id, {
-      onDelete: 'cascade',
-      onUpdate: 'cascade'
-    }),
-    reactionType: mysqlEnum('reaction_type', ['like', 'heart', 'funny', 'angry', 'sad']),
-    ...timestamps
-  },
-  (table) => ({
-    pkUserPostReaction: primaryKey({ name: 'pk_user_id_post_id', columns: [table.userId, table.postId] }),
-    idxUserIdPostId: unique('idx_user_id_post_id').on(table.userId, table.postId)
-  })
-);
+// export const userPostReactions = mysqlTable(
+//   'user_post_reactions',
+//   {
+//     userId: int('user_id').references(() => users.id, {
+//       onDelete: 'cascade',
+//       onUpdate: 'cascade'
+//     }),
+//     postId: int('post_id').references(() => posts.id, {
+//       onDelete: 'cascade',
+//       onUpdate: 'cascade'
+//     }),
+//     reactionType: mysqlEnum('reaction_type', ['like', 'heart', 'funny', 'angry', 'sad']),
+//     ...timestamps
+//   },
+//   (table) => ({
+//     pkUserPostReaction: primaryKey({ name: 'pk_user_id_post_id', columns: [table.userId, table.postId] }),
+//     idxUserIdPostId: unique('idx_user_id_post_id').on(table.userId, table.postId)
+//   })
+// );
 
 // export const postTags = mysqlTable('post_tags', {
 //   id: int().primaryKey().autoincrement(),
@@ -345,15 +348,41 @@ export const postCommentClosures = mysqlTable(
 
 export const userPostsInterested = mysqlTable('user_posts_interested', {
   id: int().primaryKey().autoincrement(),
-  postId: int('post_id').references(() => posts.id),
-  userId: int('user_id').references(() => users.id),
+  postId: int('post_id').references(() => posts.id, {
+    onDelete: 'cascade',
+    onUpdate: 'cascade'
+  }),
+  userId: int('user_id').references(() => users.id, {
+    onDelete: 'cascade',
+    onUpdate: 'cascade'
+  }),
   ...timestamps
 });
 
-export const userFollowing = mysqlTable('user_following', {
+export const userFollowers = mysqlTable('user_followers', {
   id: int().primaryKey().autoincrement(),
-  userId: int('user_id').references(() => users.id),
-  followingUserId: int('following_user_id').references(() => users.id),
+  userId: int('user_id').references(() => users.id, {
+    onDelete: 'cascade',
+    onUpdate: 'cascade'
+  }),
+  followingUserId: int('following_user_id').references(() => users.id, {
+    onDelete: 'cascade',
+    onUpdate: 'cascade'
+  }),
+  ...timestamps
+});
+
+export const userContacts = mysqlTable('user_contacts', {
+  id: int().primaryKey().autoincrement(),
+  userId: int('user_id')
+    .notNull()
+    .references(() => users.id, {
+      onDelete: 'cascade',
+      onUpdate: 'cascade'
+    }),
+  contactType: mysqlEnum('contact_type', ['facebook', 'email', 'phone', 'zalo', 'other']).default('other'),
+  contactContent: varchar('pass_item_name', { length: 255 }).notNull(),
+  isActived: boolean('is_actived').default(true),
   ...timestamps
 });
 
@@ -405,7 +434,13 @@ export const notifications = mysqlTable('notifications', {
   isRead: boolean('is_read').default(false),
   userId: int('user_id')
     .notNull()
-    .references(() => users.id),
-  postId: int('post_id').references(() => posts.id),
+    .references(() => users.id, {
+      onDelete: 'cascade',
+      onUpdate: 'cascade'
+    }),
+  postId: int('post_id').references(() => posts.id, {
+    onDelete: 'cascade',
+    onUpdate: 'cascade'
+  }),
   ...timestamp
 });

@@ -12,11 +12,16 @@ import { geocodingByDistanceMatrix, geocodingByGoong } from '@/services/location
 import { updatePostByConditions } from '@/services/post.service';
 import { searchTokenByCondition } from '@/services/token.service';
 import {
+  deleteUserContactByContactId,
+  insertUserContact,
   selectFullUserByConditions,
   selectUserAvatarByUserId,
+  selectUserContactByContactId,
+  selectUserContactByUserId,
   selectUserDetailByEmail,
   selectUserDetailById,
   updateUserById,
+  updateUserContactByContactId,
   updateUserDetailById
 } from '@/services/user.service';
 import {
@@ -24,6 +29,7 @@ import {
   assetSchemaType,
   assetType,
   tokenSchemaType,
+  UserContactsInsertSchemaType,
   userDetailSchemaType
 } from '@/types/schema.type';
 import ApiError from '@/utils/ApiError.helper';
@@ -510,6 +516,91 @@ export const getUserProfile = async (req: Request, res: Response, next: NextFunc
     }
 
     return new ApiResponse(StatusCodes.OK, ReasonPhrases.OK, userDetailResult[0]).send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const createUserContact = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const currentUser = req.currentUser;
+    const { users } = currentUser!;
+
+    const { contactType, contactContent } = req.body;
+    const contactPayload: UserContactsInsertSchemaType = { contactType, contactContent, userId: users.id! };
+    const insertContactResult = await insertUserContact(contactPayload);
+
+    return new ApiResponse(StatusCodes.CREATED, ReasonPhrases.CREATED, { id: insertContactResult[0].id }).send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getUserContacts = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { userId } = req.params;
+    if (!userId) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
+    }
+    const getUserContactResults = await selectUserContactByUserId(Number(userId));
+    return new ApiResponse(StatusCodes.CREATED, ReasonPhrases.CREATED, getUserContactResults).send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateUserContact = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const currentUser = req.currentUser;
+    const { users } = currentUser!;
+    const { contactId } = req.params;
+    const { contactType, contactContent } = req.body;
+
+    if (!contactId) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
+    }
+
+    const existingUserContact = await selectUserContactByContactId(Number(contactId));
+    if (!existingUserContact.length) {
+      throw new ApiError(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND);
+    }
+    if (existingUserContact[0].userId !== users.id) {
+      throw new ApiError(StatusCodes.FORBIDDEN, ReasonPhrases.FORBIDDEN);
+    }
+
+    const contactPayload: Partial<UserContactsInsertSchemaType> = { contactType, contactContent };
+    await updateUserContactByContactId(existingUserContact[0].id, contactPayload);
+
+    return new ApiResponse(StatusCodes.OK, 'Update user contact successfully!', { id: existingUserContact[0].id }).send(
+      res
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const removeUserContact = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const currentUser = req.currentUser;
+    const { users } = currentUser!;
+    const { contactId } = req.params;
+
+    if (!contactId) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
+    }
+
+    const existingUserContact = await selectUserContactByContactId(Number(contactId));
+    if (!existingUserContact.length) {
+      throw new ApiError(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND);
+    }
+    if (existingUserContact[0].userId !== users.id) {
+      throw new ApiError(StatusCodes.FORBIDDEN, ReasonPhrases.FORBIDDEN);
+    }
+    await deleteUserContactByContactId(existingUserContact[0].id);
+
+    return new ApiResponse(StatusCodes.OK, 'Delete user contact successfully!', { id: existingUserContact[0].id }).send(
+      res
+    );
   } catch (error) {
     next(error);
   }

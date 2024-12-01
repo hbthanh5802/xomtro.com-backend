@@ -1,7 +1,6 @@
-import { addresses, userDetail } from '@/models/schema';
+import { addresses, userContacts, userDetail } from '@/models/schema';
 import { userRole } from '@/types/schema.type';
 import { dateValidation, emailValidation, passwordValidation, phoneValidation } from '@/validations/commonValidation';
-import dayjs from 'dayjs';
 import { createInsertSchema } from 'drizzle-zod';
 import { z } from 'zod';
 
@@ -71,3 +70,5 @@ export const updateUserProfileValidation = createInsertSchema(userDetail, {
     dob: true
   })
   .partial();
+
+export const insertUserContactValidation = createInsertSchema(userContacts).omit({ userId: true });
