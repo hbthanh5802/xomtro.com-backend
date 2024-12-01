@@ -8,12 +8,13 @@ import {
   postAssets,
   posts,
   rentalPosts,
+  userPostsInterested,
   wantedPosts
 } from '@/models/schema';
 import { ConditionsType } from '@/types/drizzle.type';
 import ApiError from '@/utils/ApiError.helper';
 import { processCondition, processOrderCondition, selectOptions, withPagination } from '@/utils/schema.helper';
-import { SQLWrapper, and, eq, getTableColumns, inArray, sql } from 'drizzle-orm';
+import { and, eq, getTableColumns, inArray, sql, SQLWrapper } from 'drizzle-orm';
 import { ReasonPhrases, StatusCodes } from 'http-status-codes';
 import {
   joinPostSchemaType,
@@ -22,6 +23,8 @@ import {
   postAssetsSchemaType,
   postSchemaType,
   rentalPostSchemaType,
+  UserPostInterestedSelectSchemaType,
+  UserPostsInterestedInsertSchemaType,
   wantedPostSchemaType
 } from './../types/schema.type';
 
@@ -83,6 +86,10 @@ export const insertPassPostItem = async (payload: passPostItemSchemaType[] | pas
     console.log(2, payload);
     return db.insert(passPostItems).values(payload).$returningId();
   }
+};
+
+export const insertUserPostInterested = async (payload: UserPostsInterestedInsertSchemaType) => {
+  return db.insert(userPostsInterested).values(payload).$returningId();
 };
 
 // SELECT
@@ -275,8 +282,6 @@ export const selectRentalPostByConditions = async <T extends selectRentalPostByC
     if (orderClause.length) {
       query = query.orderBy(...(orderClause as any)).$dynamic();
     }
-
-    console.log(query.toSQL());
     const rawData = await query;
 
     // Xử lý kết quả: Gom nhóm `assets` theo từng `post`
@@ -624,6 +629,35 @@ export const selectPassPostByConditions = async <T extends selectPassPostByCondi
   }
 };
 
+export const selectInterestedUserPostByConditions = async <T extends UserPostInterestedSelectSchemaType>(
+  conditions?: ConditionsType<T>,
+  options?: selectOptions<T>
+) => {
+  let whereClause: (SQLWrapper | undefined)[] = [];
+  let orderClause: (SQLWrapper | undefined)[] = [];
+
+  if (conditions) {
+    whereClause = Object.entries(conditions).map(([field, condition]) => {
+      return processCondition(field, condition, userPostsInterested as any);
+    });
+  }
+  if (options?.orderConditions) {
+    orderClause = Object.entries(options.orderConditions).map(([field, condition]) => {
+      return processOrderCondition(field, condition, userPostsInterested as any);
+    });
+  }
+
+  let query = db.select().from(userPostsInterested).$dynamic();
+  if (whereClause.length) {
+    query = query.where(and(...whereClause)).$dynamic();
+  }
+  if (orderClause.length) {
+    query = query.orderBy(...(orderClause as any));
+  }
+
+  return query;
+};
+
 // UPDATE
 export const updatePostById = async (postId: number, payload: Partial<postSchemaType>) => {
   return db.update(posts).set(payload).where(eq(posts.id, postId));
@@ -684,4 +718,14 @@ export const deleteManyPassPostItems = async (postId: number, passPostItemIds: n
   return db
     .delete(passPostItems)
     .where(and(eq(passPostItems.passPostId, postId), inArray(passPostItems.id, passPostItemIds)));
+};
+
+export const deleteUserPostInterestByConditions = async <T extends UserPostsInterestedInsertSchemaType>(
+  conditions: ConditionsType<T>
+) => {
+  const whereClause = Object.entries(conditions).map(([field, condition]) => {
+    return processCondition(field, condition, userPostsInterested as any);
+  });
+
+  return db.delete(userPostsInterested).where(and(...whereClause));
 };

@@ -343,6 +343,20 @@ export const postCommentClosures = mysqlTable(
   })
 );
 
+export const userPostsInterested = mysqlTable('user_posts_interested', {
+  id: int().primaryKey().autoincrement(),
+  postId: int('post_id').references(() => posts.id),
+  userId: int('user_id').references(() => users.id),
+  ...timestamps
+});
+
+export const userFollowing = mysqlTable('user_following', {
+  id: int().primaryKey().autoincrement(),
+  userId: int('user_id').references(() => users.id),
+  followingUserId: int('following_user_id').references(() => users.id),
+  ...timestamps
+});
+
 export const chats = mysqlTable('chats', {
   id: int().primaryKey().autoincrement(),
   title: varchar({ length: 255 }),
