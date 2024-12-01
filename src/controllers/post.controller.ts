@@ -5,15 +5,18 @@ import {
   deleteManyPassPostItems,
   deletePostAssets,
   deletePostById,
+  deleteUserPostInterestByConditions,
   insertJoinPost,
   insertPassPost,
   insertPassPostItem,
   insertPost,
   insertPostAssets,
   insertRentalPost,
+  insertUserPostInterested,
   insertWantedPost,
   removeAllPassPostItemByPostId,
   selectFullPostDetailById,
+  selectInterestedUserPostByConditions,
   selectJoinPostByConditionType,
   selectJoinPostByConditions,
   selectPassPostByConditionType,
@@ -34,6 +37,7 @@ import {
 } from '@/services/post.service';
 import { ConditionsType } from '@/types/drizzle.type';
 import {
+  UserPostInterestedSelectSchemaType,
   assetSchemaType,
   assetType,
   joinPostSchemaType,
@@ -1815,6 +1819,85 @@ export const updateViewCount = async (req: Request, res: Response, next: NextFun
     await updatePostById(post.id, { viewedCount: post.viewedCount! + 1 });
 
     return new ApiResponse(StatusCodes.OK, 'Update view post successfully!').send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const createUserPostInterested = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const currentUser = req.currentUser;
+    const { users } = currentUser!;
+    const { postId } = req.body;
+
+    if (!postId) {
+      throw new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, ReasonPhrases.UNPROCESSABLE_ENTITY);
+    }
+
+    const selectPostResponse = await selectPostById(postId);
+    if (!selectPostResponse.length) {
+      throw new ApiError(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND);
+    }
+
+    await insertUserPostInterested({ userId: users.id, postId });
+    return new ApiResponse(StatusCodes.CREATED, ReasonPhrases.CREATED, { postId }).send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getInterestedUserPosts = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const currentUser = req.currentUser;
+    const { users } = currentUser!;
+    const { whereConditions, orderConditions } = req.body;
+    const { id, postId } = whereConditions;
+    const { createdAt, updatedAt } = orderConditions;
+
+    const where: ConditionsType<UserPostInterestedSelectSchemaType> = {
+      ...(id && { id: { operator: 'eq', value: Number(id) } }),
+      ...(users.id && { userId: { operator: 'eq', value: Number(users.id) } }),
+      ...(postId && { postId: { operator: 'eq', value: Number(postId) } })
+    };
+    const options: selectOptions<UserPostInterestedSelectSchemaType> = {
+      orderConditions: {
+        ...(updatedAt && { updatedAt }),
+        ...(createdAt && { createdAt })
+      }
+    };
+
+    const selectResponse = await selectInterestedUserPostByConditions(where, options);
+
+    return new ApiResponse(StatusCodes.OK, ReasonPhrases.OK, selectResponse).send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const removeUserPostInterested = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const currentUser = req.currentUser;
+    const { users } = currentUser!;
+    const { postId } = req.params;
+
+    if (!postId) {
+      throw new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, ReasonPhrases.UNPROCESSABLE_ENTITY);
+    }
+
+    const existingUserPostInterested = await selectInterestedUserPostByConditions({
+      postId: { operator: 'eq', value: Number(postId) },
+      userId: { operator: 'eq', value: Number(users.id) }
+    });
+    if (!existingUserPostInterested.length) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
+    }
+
+    await deleteUserPostInterestByConditions({
+      postId: { operator: 'eq', value: Number(postId) },
+      userId: { operator: 'eq', value: Number(users.id) }
+    });
+
+    return new ApiResponse(StatusCodes.OK, ReasonPhrases.OK, 'Delete interested user post successfully').send(res);
   } catch (error) {
     next(error);
   }

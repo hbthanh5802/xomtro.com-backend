@@ -13,8 +13,7 @@ import express from 'express';
 
 const router = express.Router();
 
-// Get full post detail
-router.get('/:postId', postController.getPostById);
+// -- POST
 // Create a new rental post
 router.post(
   '/rental',
@@ -47,12 +46,18 @@ router.post(
   validationAsync(insertPassPostValidation),
   postController.createPassPost
 );
+// Add a new interested post
+router.post('/interested', authMiddleware.verifyUser, postController.createUserPostInterested);
 
+// -- GET
+// Get full post detail
+router.get('/:postId', postController.getPostById);
 // Search pass posts
 router.post('/search/pass', postController.searchPassPosts);
 // Search others post type
 router.post('/search/:type', postController.searchPosts);
 
+// -- UPDATE
 // Change post status
 router.put('/:postId/status', authMiddleware.verifyUser, postController.hiddenPostById);
 // Increase post view
@@ -96,11 +101,15 @@ router.put(
   validationAsync(insertPassPostValidation),
   postController.updatePassPost
 );
+
+// -- DELETE
 // Remove pass post items by id list
 router.delete('/pass/:postId/items', authMiddleware.verifyUser, postController.removePassPostItems);
 // Remove post assets by id list
 router.delete('/:postId/assets', authMiddleware.verifyUser, postController.removePostAssets);
 // Remove a post
 router.delete('/:postId', authMiddleware.verifyUser, postController.removePostById);
+// Remove a interested post
+router.delete('/interested/:postId', authMiddleware.verifyUser, postController.removeUserPostInterested);
 
 export default router;

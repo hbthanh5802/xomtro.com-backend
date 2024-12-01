@@ -1,3 +1,4 @@
+import * as postController from '@/controllers/post.controller';
 import * as userController from '@/controllers/user.controller';
 import * as authMiddlewares from '@/middlewares/auth.middleware';
 import { uploadMiddleware } from '@/middlewares/upload.middleware';
@@ -11,7 +12,7 @@ import express from 'express';
 
 const router = express.Router();
 
-// User auth
+//-- User auth
 router.get('/verify/email', userController.getVerifyUserEmail);
 
 router.post('/verify/email', userController.verifyUserEmail);
@@ -23,14 +24,14 @@ router.put(
   userController.changeUserPassword
 );
 
-// User avatar
+//-- User avatar
 router.get('/me/avatar', authMiddlewares.verifyUser, userController.getMyAvatar);
 
 router.get('/:userId/avatar', userController.getUserAvatar);
 
 router.put('/avatar', authMiddlewares.verifyUser, uploadMiddleware.single('avatar'), userController.updateUserAvatar);
 
-// User addresses
+//-- User addresses
 router.post(
   '/addresses',
   authMiddlewares.verifyUser,
@@ -53,7 +54,7 @@ router.get('/addresses', authMiddlewares.verifyUser, userController.getUserAddre
 
 router.get('/addresses/:userId/default', userController.getUserDefaultAddress);
 
-// Profile
+//-- Profile
 router.put(
   '/me',
   authMiddlewares.verifyUser,
@@ -62,5 +63,8 @@ router.put(
 );
 
 router.get('/:userId', userController.getUserProfile);
+
+// Get user interested posts
+router.post('/interested', authMiddlewares.verifyUser, postController.getInterestedUserPosts);
 
 export default router;

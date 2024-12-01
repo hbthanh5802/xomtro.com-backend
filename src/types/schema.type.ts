@@ -115,6 +115,7 @@ export enum notificationType {
   ACCOUNT = 'account'
 }
 
+// INSERT
 export type userSchemaType = typeof schema.users.$inferInsert;
 export type userDetailSchemaType = typeof schema.userDetail.$inferInsert;
 export type tokenSchemaType = typeof schema.tokens.$inferInsert;
@@ -127,3 +128,10 @@ export type joinPostSchemaType = typeof schema.joinPosts.$inferInsert;
 export type passPostSchemaType = typeof schema.passPosts.$inferInsert;
 export type postAssetsSchemaType = typeof schema.postAssets.$inferInsert;
 export type passPostItemSchemaType = typeof schema.passPostItems.$inferInsert;
+
+export type UserPostsInterestedInsertSchemaType = typeof schema.userPostsInterested.$inferInsert;
+export type UserFollowingInsertSchemaType = typeof schema.userFollowing.$inferInsert;
+
+// SELECT
+export type UserPostInterestedSelectSchemaType = typeof schema.userPostsInterested.$inferSelect;
+export type UserFollowingSelectSchemaType = typeof schema.userFollowing.$inferSelect;
