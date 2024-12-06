@@ -282,7 +282,7 @@ export const createUserAddress = async (req: Request, res: Response, next: NextF
     let { provinceName, districtName, wardName, detail, postalCode, longitude, latitude, addressCode } = req.body;
 
     if (!longitude || !latitude) {
-      const address = `${wardName}, ${districtName}, ${provinceName}`;
+      const address = `${detail ? detail : ''}, ${wardName}, ${districtName}, ${provinceName}`;
       const apiServices = [
         () => geocodingByDistanceMatrix(address as string),
         () => geocodingByGoong(address as string)
@@ -315,7 +315,6 @@ export const createUserAddress = async (req: Request, res: Response, next: NextF
       addressCode
     };
 
-    console.log(insertAddressPayload);
     const insertResult = await insertAddress(insertAddressPayload);
     const justInsertedAddress = await searchAddressByConditions({
       id: {

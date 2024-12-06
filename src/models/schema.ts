@@ -276,33 +276,6 @@ export const passPostItems = mysqlTable('pass_post_items', {
   passItemStatus: mysqlEnum('pass_item_status', ['new', 'used'])
 });
 
-// export const userPostReactions = mysqlTable(
-//   'user_post_reactions',
-//   {
-//     userId: int('user_id').references(() => users.id, {
-//       onDelete: 'cascade',
-//       onUpdate: 'cascade'
-//     }),
-//     postId: int('post_id').references(() => posts.id, {
-//       onDelete: 'cascade',
-//       onUpdate: 'cascade'
-//     }),
-//     reactionType: mysqlEnum('reaction_type', ['like', 'heart', 'funny', 'angry', 'sad']),
-//     ...timestamps
-//   },
-//   (table) => ({
-//     pkUserPostReaction: primaryKey({ name: 'pk_user_id_post_id', columns: [table.userId, table.postId] }),
-//     idxUserIdPostId: unique('idx_user_id_post_id').on(table.userId, table.postId)
-//   })
-// );
-
-// export const postTags = mysqlTable('post_tags', {
-//   id: int().primaryKey().autoincrement(),
-//   label: varchar({ length: 25 }).notNull(),
-//   usedCount: int('used_count').notNull().default(1),
-//   ...timestamps
-// });
-
 export const postComments = mysqlTable('post_comments', {
   id: int().primaryKey().autoincrement(),
   content: text().notNull(),
@@ -397,8 +370,14 @@ export const chatMembers = mysqlTable(
   'chat_members',
   {
     id: int().primaryKey().autoincrement(),
-    chatId: int('chat_id').references(() => chats.id),
-    userId: int('user_id').references(() => users.id),
+    chatId: int('chat_id').references(() => chats.id, {
+      onDelete: 'cascade',
+      onUpdate: 'cascade'
+    }),
+    userId: int('user_id').references(() => users.id, {
+      onDelete: 'cascade',
+      onUpdate: 'cascade'
+    }),
     joinedAt: timestamp('joined_at')
       .notNull()
       .default(sql`(now())`),
@@ -410,21 +389,34 @@ export const chatMembers = mysqlTable(
   })
 );
 
-export const messages = mysqlTable('messages', {
-  id: int().primaryKey().autoincrement(),
-  senderId: int('sender_id')
-    .notNull()
-    .references(() => users.id),
-  content: text().notNull(),
-  assetId: int('asset_id').references(() => assets.id),
-  messageType: mysqlEnum('message_type', ['text', 'file']).notNull(),
-  sentAt: datetime('sent_at')
-    .notNull()
-    .default(sql`now()`),
-  allowRecallTime: datetime('allow_recall_time').notNull(),
-  isRecalled: boolean('is_recalled').notNull().default(false),
-  recalledAt: timestamp('recalled_at')
-});
+export const messages = mysqlTable(
+  'messages',
+  {
+    id: int().primaryKey().autoincrement(),
+    chatId: int().references(() => chats.id, {
+      onDelete: 'cascade',
+      onUpdate: 'cascade'
+    }),
+    senderId: int('sender_id')
+      .notNull()
+      .references(() => users.id),
+    content: text().notNull(),
+    assetId: int('asset_id').references(() => assets.id, {
+      onDelete: 'cascade',
+      onUpdate: 'cascade'
+    }),
+    messageType: mysqlEnum('message_type', ['text', 'file']).notNull(),
+    sentAt: datetime('sent_at')
+      .notNull()
+      .default(sql`now()`),
+    allowRecallTime: datetime('allow_recall_time').notNull(),
+    isRecalled: boolean('is_recalled').notNull().default(false),
+    recalledAt: timestamp('recalled_at')
+  },
+  (table) => ({
+    idxMessagesChatIdSentAt: index('idx_messages_chat_id_sent_at').on(table.chatId, table.sentAt)
+  })
+);
 
 export const notifications = mysqlTable('notifications', {
   id: int().primaryKey().autoincrement(),

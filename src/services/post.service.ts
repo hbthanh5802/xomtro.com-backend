@@ -661,7 +661,6 @@ export const selectInterestedUserPostByConditions = async <T extends UserPostInt
 
   return query;
 };
-
 // UPDATE
 export const updatePostById = async (postId: number, payload: Partial<postSchemaType>) => {
   return db.update(posts).set(payload).where(eq(posts.id, postId));
