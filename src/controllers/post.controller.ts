@@ -160,7 +160,7 @@ export const createRentalPost = async (req: Request, res: Response, next: NextFu
     const { users, users_detail } = currentUser;
 
     if (!addressLongitude || !addressLatitude) {
-      const address = `${addressWard}, ${addressDistrict}, ${addressProvince}`;
+      const address = `${addressDetail ? addressDetail : ''}, ${addressWard}, ${addressDistrict}, ${addressProvince}`;
       const apiServices = [
         () => geocodingByDistanceMatrix(address as string),
         () => geocodingByGoong(address as string)
@@ -278,7 +278,7 @@ export const createWantedPost = async (req: Request, res: Response, next: NextFu
     const { users } = currentUser;
 
     if (!addressLongitude || !addressLatitude) {
-      const address = `${addressWard}, ${addressDistrict}, ${addressProvince}`;
+      const address = `${addressDetail ? addressDetail : ''}, ${addressWard}, ${addressDistrict}, ${addressProvince}`;
       const apiServices = [
         () => geocodingByDistanceMatrix(address as string),
         () => geocodingByGoong(address as string)
@@ -410,7 +410,7 @@ export const createJoinPost = async (req: Request, res: Response, next: NextFunc
     }
 
     if (!addressLongitude || !addressLatitude) {
-      const address = `${addressWard}, ${addressDistrict}, ${addressProvince}`;
+      const address = `${addressDetail ? addressDetail : ''}, ${addressWard}, ${addressDistrict}, ${addressProvince}`;
       const apiServices = [
         () => geocodingByDistanceMatrix(address as string),
         () => geocodingByGoong(address as string)
@@ -506,7 +506,7 @@ export const createPassPost = async (req: Request, res: Response, next: NextFunc
     const { users } = currentUser;
 
     if (!addressLongitude || !addressLatitude) {
-      const address = `${addressWard}, ${addressDistrict}, ${addressProvince}`;
+      const address = `${addressDetail ? addressDetail : ''}, ${addressWard}, ${addressDistrict}, ${addressProvince}`;
       const apiServices = [
         () => geocodingByDistanceMatrix(address as string),
         () => geocodingByGoong(address as string)
@@ -820,7 +820,7 @@ export const searchPosts = async (req: Request, res: Response, next: NextFunctio
         }
       }),
       ...(dateStart && {
-        createdAt: {
+        updatedAt: {
           operator: 'between',
           value: [new Date(dateStart), dateEnd ? new Date(dateEnd) : timeInVietNam().toDate()]
         }
@@ -1014,7 +1014,7 @@ export const searchPassPosts = async (req: Request, res: Response, next: NextFun
         }
       }),
       ...(dateStart && {
-        createdAt: {
+        updatedAt: {
           operator: 'between',
           value: [new Date(dateStart), dateEnd ? new Date(dateEnd) : timeInVietNam().toDate()]
         }
@@ -1238,7 +1238,7 @@ export const updateRentalPost = async (req: Request, res: Response, next: NextFu
     }
 
     if (!addressLongitude || !addressLatitude) {
-      const address = `${addressWard}, ${addressDistrict}, ${addressProvince}`;
+      const address = `${addressDetail ? addressDetail : ''}, ${addressWard}, ${addressDistrict}, ${addressProvince}`;
       const apiServices = [
         () => geocodingByDistanceMatrix(address as string),
         () => geocodingByGoong(address as string)
@@ -1390,7 +1390,7 @@ export const updateWantedPost = async (req: Request, res: Response, next: NextFu
     }
 
     if (!addressLongitude || !addressLatitude) {
-      const address = `${addressWard}, ${addressDistrict}, ${addressProvince}`;
+      const address = `${addressDetail ? addressDetail : ''}, ${addressWard}, ${addressDistrict}, ${addressProvince}`;
       const apiServices = [
         () => geocodingByDistanceMatrix(address as string),
         () => geocodingByGoong(address as string)
@@ -1523,7 +1523,7 @@ export const updateJoinPost = async (req: Request, res: Response, next: NextFunc
     }
 
     if (!addressLatitude || !addressLongitude) {
-      const address = `${addressWard} ${addressDistrict} ${addressProvince}`;
+      const address = `${addressDetail ? addressDetail : ''}, ${addressWard}, ${addressDistrict}, ${addressProvince}`;
       const getGeoCodingResult = await geocodingByGeocodeMap(address);
       addressLatitude = getGeoCodingResult.latitude;
       addressLongitude = getGeoCodingResult.longitude;
@@ -1629,7 +1629,7 @@ export const updatePassPost = async (req: Request, res: Response, next: NextFunc
     }
 
     if (!addressLongitude || !addressLatitude) {
-      const address = `${addressWard}, ${addressDistrict}, ${addressProvince}`;
+      const address = `${addressDetail ? addressDetail : ''}, ${addressWard}, ${addressDistrict}, ${addressProvince}`;
       const apiServices = [
         () => geocodingByDistanceMatrix(address as string),
         () => geocodingByGoong(address as string)
@@ -1806,7 +1806,7 @@ export const removePassPostItems = async (req: Request, res: Response, next: Nex
 
 export const updateViewCount = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const postId = req.params;
+    const { postId } = req.params;
     if (!postId) {
       throw new ApiError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
     }

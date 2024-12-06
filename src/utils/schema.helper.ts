@@ -1,6 +1,7 @@
 import { Condition } from '@/types/drizzle.type';
 import { postType, userRole } from '@/types/schema.type';
 import {
+  AnyColumn,
   SQLWrapper,
   asc,
   between,
@@ -115,8 +116,10 @@ export type orderConditionType<T> = {
   [K in keyof T]?: 'asc' | 'desc';
 };
 
+export type PaginationConditionType = { page?: number; pageSize?: number };
+
 export type selectOptions<T> = {
-  pagination?: { page: number; pageSize?: number };
+  pagination?: PaginationConditionType;
   orderConditions?: orderConditionType<T>;
 };
 
@@ -141,4 +144,12 @@ export const checkUserAndPostPermission = (role: string, type: string) => {
     return true;
   }
   return false;
+};
+
+export const customCount = (column?: AnyColumn) => {
+  if (column) {
+    return sql<number>`COUNT(${column})`.mapWith(Number);
+  } else {
+    return sql<number>`COUNT(1)`.mapWith(Number);
+  }
 };

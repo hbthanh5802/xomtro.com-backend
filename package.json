@@ -68,6 +68,7 @@
     "nodemailer": "^6.9.15",
     "query-string": "^9.1.1",
     "sharp": "^0.33.5",
+    "socket.io-client": "^4.8.1",
     "uuid": "^10.0.0",
     "zod": "^3.23.8"
   }
