@@ -1,5 +1,5 @@
 import { db } from '@/configs/database.config';
-import { chatMembers, chats } from '@/models/schema';
+import { chatMembers, chats, userDetail } from '@/models/schema';
 import { ConditionsType } from '@/types/drizzle.type';
 import { ChatInsertSchemaType, ChatMemberInsertSchemaType, ChatMemberSelectSchemaType } from '@/types/schema.type';
 import { processCondition } from '@/utils/schema.helper';
@@ -38,8 +38,14 @@ export const selectChatMemberByConditions = async <T extends ChatMemberSelectSch
   });
 
   return db
-    .select()
+    .select({
+      ...getTableColumns(chatMembers),
+      email: userDetail.email,
+      firstName: userDetail.firstName,
+      lastName: userDetail.lastName
+    })
     .from(chatMembers)
+    .leftJoin(userDetail, eq(chatMembers.userId, userDetail.userId))
     .where(and(...whereClause));
 };
 

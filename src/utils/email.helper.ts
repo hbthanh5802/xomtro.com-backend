@@ -1,6 +1,7 @@
 import { transporter } from '@/configs/nodeMailer.config';
 
 export const sendEmail = async (emailReceiver: string, subject: string, content: string) => {
+  console.log('Send email to', emailReceiver);
   return transporter.sendMail({
     from: 'xomtro@support.com',
     to: emailReceiver,
@@ -67,7 +68,6 @@ export const generateEmailContent = (username?: string, options?: emailContentOp
           <strong>Xin chào, ${username ? username : ''}!</strong>
           <p>${bodyText ? bodyText : ''}</p>
           <p>${bodySubText ? bodySubText : ''}</p>
-          <p>Nếu bạn không yêu cầu mã này, vui lòng bỏ qua email.</p>
           <p>Xin chân thành cảm ơn!.</p>
       </div>
 
