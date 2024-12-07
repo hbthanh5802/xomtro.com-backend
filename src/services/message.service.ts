@@ -2,8 +2,8 @@ import { db } from '@/configs/database.config';
 import { messages } from '@/models/schema';
 import { ConditionsType } from '@/types/drizzle.type';
 import { MessageInsertSchemaType, MessageSelectSchemaType } from '@/types/schema.type';
-import { PaginationConditionType, processCondition, withPagination } from '@/utils/schema.helper';
-import { and, asc, eq } from 'drizzle-orm';
+import { processCondition, processOrderCondition, selectOptions, withPagination } from '@/utils/schema.helper';
+import { and, eq, SQLWrapper } from 'drizzle-orm';
 
 // INSERT
 export const insertMessage = async (payload: MessageInsertSchemaType) => {
@@ -11,20 +11,42 @@ export const insertMessage = async (payload: MessageInsertSchemaType) => {
 };
 
 // SELECT
-export const selectMessageByConditions = async <T extends MessageSelectSchemaType>(conditions: ConditionsType<T>) => {
+export const selectMessageByConditions = async <T extends MessageSelectSchemaType>(
+  conditions: ConditionsType<T>,
+  limit?: number
+) => {
   const whereClause = Object.entries(conditions).map(([field, condition]) => {
     return processCondition(field, condition, messages as any);
   });
 
-  return db
+  let q = db
     .select()
     .from(messages)
-    .where(and(...whereClause));
+    .where(and(...whereClause))
+    .$dynamic();
+  if (limit) {
+    q = q.limit(limit);
+  }
+
+  return q;
 };
 
-export const selectMessagesOfChatId = async (chatId: number, paginationCondition?: PaginationConditionType) => {
-  let q = db.select().from(messages).where(eq(messages.chatId, chatId)).orderBy(asc(messages.sentAt)).$dynamic();
-  const { page, pageSize } = paginationCondition ?? {};
+export const selectMessagesOfChatId = async (chatId: number, options?: selectOptions<MessageSelectSchemaType>) => {
+  // Xử lý order conditions
+  let q = db.select().from(messages).where(eq(messages.chatId, chatId)).$dynamic();
+
+  let orderClause: SQLWrapper[] = [];
+  if (options?.orderConditions) {
+    const { orderConditions } = options;
+    orderClause = Object.entries(orderConditions).map(([field, direction]) => {
+      return processOrderCondition(field, direction, messages as any);
+    });
+  }
+  if (orderClause.length) {
+    q = q.orderBy(...(orderClause as any)).$dynamic();
+  }
+
+  const { page, pageSize } = options?.pagination ?? {};
   q = withPagination(q, page ?? 1, pageSize ?? 15);
   return q;
 };

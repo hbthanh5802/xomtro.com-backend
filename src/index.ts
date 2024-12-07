@@ -1,6 +1,7 @@
 import { corsOptions } from '@/configs/cors.config';
 import { checkDatabaseConnection } from '@/configs/database.config';
 import { env } from '@/configs/env.config';
+import { app, server } from '@/configs/socket.config';
 import { startCronJobs } from '@/crons/jobs';
 import { errorHandler } from '@/middlewares/errorHandler.middleware';
 import { useRoutes } from '@/routes/index.route';
@@ -8,10 +9,7 @@ import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import 'dotenv/config';
-import express from 'express';
 import morgan from 'morgan';
-
-const app = express();
 
 // Middlewares
 app.use(cors(corsOptions));
@@ -32,7 +30,7 @@ async function start() {
   try {
     await checkDatabaseConnection();
     startCronJobs();
-    app.listen(port, () => {
+    server.listen(port, () => {
       console.log(`[INFO] Server is running at port ${port}`);
     });
   } catch (error) {

@@ -1,7 +1,7 @@
 import { db } from '@/configs/database.config';
 import { assets } from '@/models/schema';
 import { Condition, ConditionsType } from '@/types/drizzle.type';
-import { assetSchemaType } from '@/types/schema.type';
+import { assetSchemaType, AssetSelectSchemaType } from '@/types/schema.type';
 import { processCondition } from '@/utils/schema.helper';
 import { and, eq } from 'drizzle-orm';
 import { queryOptions, withPagination } from './../utils/schema.helper';
@@ -44,4 +44,13 @@ export const selectAssetsByConditions = async <T extends assetSchemaType>(
   }
 
   return query;
+};
+
+// DELETE
+export const deleteAssetByConditions = async <T extends AssetSelectSchemaType>(conditions: ConditionsType<T>) => {
+  const whereClause = Object.entries(conditions).map(([field, condition]) => {
+    return processCondition(field as keyof T, condition as Condition<T, keyof T>, assets as any);
+  });
+
+  return db.delete(assets).where(and(...whereClause));
 };

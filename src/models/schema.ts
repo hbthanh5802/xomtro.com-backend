@@ -402,7 +402,7 @@ export const messages = mysqlTable(
       .references(() => users.id),
     content: text().notNull(),
     assetId: int('asset_id').references(() => assets.id, {
-      onDelete: 'cascade',
+      onDelete: 'set null',
       onUpdate: 'cascade'
     }),
     messageType: mysqlEnum('message_type', ['text', 'file']).notNull(),
