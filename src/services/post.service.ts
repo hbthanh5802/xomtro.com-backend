@@ -23,6 +23,7 @@ import {
   passPostSchemaType,
   postAssetsSchemaType,
   postSchemaType,
+  PostSelectSchemaType,
   rentalPostSchemaType,
   UserPostInterestedSelectSchemaType,
   UserPostsInterestedInsertSchemaType,
@@ -96,6 +97,17 @@ export const insertUserPostInterested = async (payload: UserPostsInterestedInser
 // SELECT
 export const selectPostById = async (postId: number) => {
   return db.select().from(posts).where(eq(posts.id, postId));
+};
+
+export const selectPostsByConditions = async <T extends PostSelectSchemaType>(conditions: ConditionsType<T>) => {
+  const whereClause = Object.entries(conditions).map(([field, condition]) => {
+    return processCondition(field, condition, posts as any);
+  });
+
+  return db
+    .select()
+    .from(posts)
+    .where(and(...whereClause));
 };
 
 export const selectPostAssetsByPostId = async (postId: number) => {

@@ -160,6 +160,7 @@ export const posts = mysqlTable('posts', {
   description: text(),
   expirationAfter: int('expiration_after'),
   expirationAfterUnit: mysqlEnum('expiration_after_unit', ['hour', 'day', 'week', 'month']).default('day'),
+  expirationTime: datetime('expiration_time'),
   status: mysqlEnum(['actived', 'unactived']).default('actived'),
   type: mysqlEnum(['rental', 'pass', 'join', 'wanted']).notNull(),
   note: text(),

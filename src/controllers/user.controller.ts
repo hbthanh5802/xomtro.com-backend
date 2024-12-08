@@ -8,7 +8,7 @@ import {
 } from '@/services/address.service';
 import { insertAsset, selectAssetById, selectAssetsByConditions, updateAssetById } from '@/services/asset.service';
 import { deleteResource, uploadAvatar } from '@/services/fileUpload.service';
-import { geocodingByDistanceMatrix, geocodingByGoong } from '@/services/location.service';
+import { geocodingByGoong } from '@/services/location.service';
 import { updatePostByConditions } from '@/services/post.service';
 import { searchTokenByCondition } from '@/services/token.service';
 import {
@@ -283,13 +283,7 @@ export const createUserAddress = async (req: Request, res: Response, next: NextF
 
     if (!longitude || !latitude) {
       const address = `${detail ? detail : ''}, ${wardName}, ${districtName}, ${provinceName}`;
-      const apiServices = [
-        () => geocodingByDistanceMatrix(address as string),
-        () => geocodingByGoong(address as string)
-      ];
-
-      const randomApiServiceIndex = Math.floor(Math.random() * apiServices.length);
-      await apiServices[randomApiServiceIndex]()
+      await geocodingByGoong(address as string)
         .then((getGeoCodingResult) => {
           latitude = getGeoCodingResult.latitude;
           longitude = getGeoCodingResult.longitude;
@@ -351,13 +345,7 @@ export const updateUserAddress = async (req: Request, res: Response, next: NextF
     let { provinceName, districtName, wardName, detail, postalCode, longitude, latitude, addressCode } = req.body;
     if (!longitude || !latitude) {
       const address = `${wardName}, ${districtName}, ${provinceName}`;
-      const apiServices = [
-        () => geocodingByDistanceMatrix(address as string),
-        () => geocodingByGoong(address as string)
-      ];
-
-      const randomApiServiceIndex = Math.floor(Math.random() * apiServices.length);
-      await apiServices[randomApiServiceIndex]()
+      await geocodingByGoong(address as string)
         .then((getGeoCodingResult) => {
           latitude = getGeoCodingResult.latitude;
           longitude = getGeoCodingResult.longitude;
