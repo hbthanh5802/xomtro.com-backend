@@ -71,11 +71,13 @@ export const geocodingByGeocodeMap = async (address: string) => {
 
 export const geocodingByGoong = async (address: string) => {
   try {
+    const randomApiServiceIndex = Math.floor(Math.random() * 2);
+    const apiList = [env.GOONG_API_KEY_1, env.GOONG_API_KEY_2];
     const response = await axiosRequest<GoongGeocodeResponse>({
       url: 'https://rsapi.goong.io/geocode',
       params: {
         address: address,
-        api_key: env.GOONG_API_KEY
+        api_key: apiList[randomApiServiceIndex]
       }
     });
 
@@ -100,10 +102,12 @@ export const geocodingByGoong = async (address: string) => {
 
 export const geocodingReverseByGoong = async (latitude: number, longitude: number) => {
   try {
+    const randomApiServiceIndex = Math.floor(Math.random() * 2);
+    const apiList = [env.GOONG_API_KEY_1, env.GOONG_API_KEY_2];
     const response = await axiosRequest<GoongGeocodeReverseResponse>({
       url: 'https://rsapi.goong.io/geocode',
       params: {
-        api_key: env.GOONG_API_KEY,
+        api_key: apiList[randomApiServiceIndex],
         latlng: `${latitude},${longitude}`
       }
     });
@@ -141,10 +145,12 @@ export type locationAutoCompleteRequestPayload = {
 
 export const locationAutoCompleteByGoong = async (payload: locationAutoCompleteRequestPayload) => {
   try {
+    const randomApiServiceIndex = Math.floor(Math.random() * 2);
+    const apiList = [env.GOONG_API_KEY_1, env.GOONG_API_KEY_2];
     const response = await axiosRequest<GoongAutoCompleteResponseType>({
       url: 'https://rsapi.goong.io/place/autocomplete',
       params: {
-        api_key: env.GOONG_API_KEY,
+        api_key: apiList[randomApiServiceIndex],
         input: payload.searchValue,
         ...(payload.location && { location: `${payload.location.latitude},${payload.location.longitude}` }),
         ...(payload.limit && { limit: payload.limit }),
@@ -170,8 +176,11 @@ export type distanceMatrixRequestPayload = {
 };
 
 export const distanceMatrixByGoong = async (payload: distanceMatrixRequestPayload) => {
+  const randomApiServiceIndex = Math.floor(Math.random() * 2);
+  const apiList = [env.GOONG_API_KEY_1, env.GOONG_API_KEY_2];
+
   return axiosRequest<GoongDistanceMatrixResponseType>({
     url: 'https://rsapi.goong.io/distancematrix',
-    params: { ...payload, api_key: env.GOONG_API_KEY }
+    params: { ...payload, api_key: apiList[randomApiServiceIndex] }
   });
 };

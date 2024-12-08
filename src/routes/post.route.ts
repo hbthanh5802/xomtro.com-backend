@@ -101,6 +101,8 @@ router.put(
   validationAsync(insertPassPostValidation),
   postController.updatePassPost
 );
+// Renew existing post
+router.put('/:postId/renew', authMiddleware.verifyUser, postController.renewPost);
 
 // -- DELETE
 // Remove pass post items by id list

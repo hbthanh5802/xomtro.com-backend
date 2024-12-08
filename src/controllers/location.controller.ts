@@ -2,7 +2,6 @@ import axiosRequest from '@/configs/axiosClient.config';
 import {
   distanceMatrixByGoong,
   distanceMatrixRequestPayload,
-  geocodingByDistanceMatrix,
   geocodingByGoong,
   geocodingReverseByGoong,
   locationAutoCompleteByGoong,
@@ -118,15 +117,10 @@ export const getGeocodingFromAddress = async (req: Request, res: Response, next:
     if (!address) {
       throw new ApiError(StatusCodes.BAD_REQUEST, `"address" parameter is required.`);
     }
-
-    const apiServices = [() => geocodingByDistanceMatrix(address as string), () => geocodingByGoong(address as string)];
-
-    const randomApiServiceIndex = Math.floor(Math.random() * apiServices.length);
-    const response = await apiServices[randomApiServiceIndex]();
+    const response = await geocodingByGoong(address as string);
 
     return new ApiResponse(StatusCodes.OK, ReasonPhrases.OK, {
-      ...response,
-      apiIndex: randomApiServiceIndex
+      ...response
     }).send(res);
   } catch (error) {
     next(error);

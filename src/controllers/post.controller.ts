@@ -1,6 +1,6 @@
 import { insertAsset } from '@/services/asset.service';
 import { deleteManyResources, uploadImage } from '@/services/fileUpload.service';
-import { geocodingByDistanceMatrix, geocodingByGeocodeMap, geocodingByGoong } from '@/services/location.service';
+import { geocodingByGoong } from '@/services/location.service';
 import {
   deleteManyPassPostItems,
   deletePostAssets,
@@ -57,6 +57,7 @@ import { cleanObject, generateSlug } from '@/utils/constants.helper';
 import { checkUserAndPostPermission, paginationHelper, selectOptions } from '@/utils/schema.helper';
 import { timeInVietNam } from '@/utils/time.helper';
 import { UploadApiResponse } from 'cloudinary';
+import dayjs from 'dayjs';
 import { NextFunction, Request, Response } from 'express';
 import { ReasonPhrases, StatusCodes } from 'http-status-codes';
 
@@ -161,13 +162,7 @@ export const createRentalPost = async (req: Request, res: Response, next: NextFu
 
     if (!addressLongitude || !addressLatitude) {
       const address = `${addressDetail ? addressDetail : ''}, ${addressWard}, ${addressDistrict}, ${addressProvince}`;
-      const apiServices = [
-        () => geocodingByDistanceMatrix(address as string),
-        () => geocodingByGoong(address as string)
-      ];
-
-      const randomApiServiceIndex = Math.floor(Math.random() * apiServices.length);
-      await apiServices[randomApiServiceIndex]()
+      await geocodingByGoong(address as string)
         .then((getGeoCodingResult) => {
           addressLatitude = getGeoCodingResult.latitude;
           addressLongitude = getGeoCodingResult.longitude;
@@ -175,6 +170,19 @@ export const createRentalPost = async (req: Request, res: Response, next: NextFu
         .catch(() => {});
     }
 
+    let expirationTime;
+    if (expirationAfter) {
+      expirationTime =
+        !expirationAfterUnit || expirationAfterUnit === 'day'
+          ? timeInVietNam().add(Number(expirationAfter), 'day')
+          : expirationAfterUnit === 'hour'
+            ? timeInVietNam().add(Number(expirationAfter), 'hour')
+            : expirationAfterUnit === 'week'
+              ? timeInVietNam().add(Number(expirationAfter), 'week')
+              : timeInVietNam().add(Number(expirationAfter), 'month');
+    } else {
+      expirationTime = timeInVietNam().add(99, 'year');
+    }
     const insertPostPayload: postSchemaType = {
       ownerId: users.id,
       type: 'rental',
@@ -191,6 +199,7 @@ export const createRentalPost = async (req: Request, res: Response, next: NextFu
       addressLongitude,
       addressLatitude,
       ...(!!expirationAfter && { expirationAfter: expirationAfter }),
+      ...(!!expirationTime && { expirationTime: expirationTime.toDate() }),
       expirationAfterUnit
     };
     const insertPostResult = await insertPost(cleanObject(insertPostPayload) as postSchemaType);
@@ -279,13 +288,7 @@ export const createWantedPost = async (req: Request, res: Response, next: NextFu
 
     if (!addressLongitude || !addressLatitude) {
       const address = `${addressDetail ? addressDetail : ''}, ${addressWard}, ${addressDistrict}, ${addressProvince}`;
-      const apiServices = [
-        () => geocodingByDistanceMatrix(address as string),
-        () => geocodingByGoong(address as string)
-      ];
-
-      const randomApiServiceIndex = Math.floor(Math.random() * apiServices.length);
-      await apiServices[randomApiServiceIndex]()
+      await geocodingByGoong(address as string)
         .then((getGeoCodingResult) => {
           addressLatitude = getGeoCodingResult.latitude;
           addressLongitude = getGeoCodingResult.longitude;
@@ -293,6 +296,19 @@ export const createWantedPost = async (req: Request, res: Response, next: NextFu
         .catch(() => {});
     }
 
+    let expirationTime;
+    if (expirationAfter) {
+      expirationTime =
+        !expirationAfterUnit || expirationAfterUnit === 'day'
+          ? timeInVietNam().add(Number(expirationAfter), 'day')
+          : expirationAfterUnit === 'hour'
+            ? timeInVietNam().add(Number(expirationAfter), 'hour')
+            : expirationAfterUnit === 'week'
+              ? timeInVietNam().add(Number(expirationAfter), 'week')
+              : timeInVietNam().add(Number(expirationAfter), 'month');
+    } else {
+      expirationTime = timeInVietNam().add(99, 'year');
+    }
     const insertPostPayload: postSchemaType = {
       ownerId: users.id,
       type: 'wanted',
@@ -309,6 +325,7 @@ export const createWantedPost = async (req: Request, res: Response, next: NextFu
       addressLongitude,
       addressLatitude,
       ...(!!expirationAfter && { expirationAfter: expirationAfter }),
+      ...(!!expirationTime && { expirationTime: expirationTime.toDate() }),
       expirationAfterUnit
     };
     const insertPostResult = await insertPost(cleanObject(insertPostPayload) as postSchemaType);
@@ -411,13 +428,7 @@ export const createJoinPost = async (req: Request, res: Response, next: NextFunc
 
     if (!addressLongitude || !addressLatitude) {
       const address = `${addressDetail ? addressDetail : ''}, ${addressWard}, ${addressDistrict}, ${addressProvince}`;
-      const apiServices = [
-        () => geocodingByDistanceMatrix(address as string),
-        () => geocodingByGoong(address as string)
-      ];
-
-      const randomApiServiceIndex = Math.floor(Math.random() * apiServices.length);
-      await apiServices[randomApiServiceIndex]()
+      await geocodingByGoong(address as string)
         .then((getGeoCodingResult) => {
           addressLatitude = getGeoCodingResult.latitude;
           addressLongitude = getGeoCodingResult.longitude;
@@ -425,9 +436,22 @@ export const createJoinPost = async (req: Request, res: Response, next: NextFunc
         .catch(() => {});
     }
 
+    let expirationTime;
+    if (expirationAfter) {
+      expirationTime =
+        !expirationAfterUnit || expirationAfterUnit === 'day'
+          ? timeInVietNam().add(Number(expirationAfter), 'day')
+          : expirationAfterUnit === 'hour'
+            ? timeInVietNam().add(Number(expirationAfter), 'hour')
+            : expirationAfterUnit === 'week'
+              ? timeInVietNam().add(Number(expirationAfter), 'week')
+              : timeInVietNam().add(Number(expirationAfter), 'month');
+    } else {
+      expirationTime = timeInVietNam().add(99, 'year');
+    }
     const insertPostPayload: postSchemaType = {
       ownerId: users.id,
-      type: 'join',
+      type: 'wanted',
       title,
       titleSlug: generateSlug(title),
       note,
@@ -436,11 +460,12 @@ export const createJoinPost = async (req: Request, res: Response, next: NextFunc
       addressProvince,
       addressDistrict,
       addressWard,
-      addressDetail,
       addressSlug: generateSlug(`${addressWard} ${addressDistrict} ${addressProvince}`),
+      addressDetail,
       addressLongitude,
       addressLatitude,
       ...(!!expirationAfter && { expirationAfter: expirationAfter }),
+      ...(!!expirationTime && { expirationTime: expirationTime.toDate() }),
       expirationAfterUnit
     };
 
@@ -507,13 +532,7 @@ export const createPassPost = async (req: Request, res: Response, next: NextFunc
 
     if (!addressLongitude || !addressLatitude) {
       const address = `${addressDetail ? addressDetail : ''}, ${addressWard}, ${addressDistrict}, ${addressProvince}`;
-      const apiServices = [
-        () => geocodingByDistanceMatrix(address as string),
-        () => geocodingByGoong(address as string)
-      ];
-
-      const randomApiServiceIndex = Math.floor(Math.random() * apiServices.length);
-      await apiServices[randomApiServiceIndex]()
+      await geocodingByGoong(address as string)
         .then((getGeoCodingResult) => {
           addressLatitude = getGeoCodingResult.latitude;
           addressLongitude = getGeoCodingResult.longitude;
@@ -531,9 +550,22 @@ export const createPassPost = async (req: Request, res: Response, next: NextFunc
 
     const passItemsPrice = passItems.map((item) => item.passItemPrice as number);
 
+    let expirationTime;
+    if (expirationAfter) {
+      expirationTime =
+        !expirationAfterUnit || expirationAfterUnit === 'day'
+          ? timeInVietNam().add(Number(expirationAfter), 'day')
+          : expirationAfterUnit === 'hour'
+            ? timeInVietNam().add(Number(expirationAfter), 'hour')
+            : expirationAfterUnit === 'week'
+              ? timeInVietNam().add(Number(expirationAfter), 'week')
+              : timeInVietNam().add(Number(expirationAfter), 'month');
+    } else {
+      expirationTime = timeInVietNam().add(99, 'year');
+    }
     const insertPostPayload: postSchemaType = {
       ownerId: users.id,
-      type: 'pass',
+      type: 'wanted',
       title,
       titleSlug: generateSlug(title),
       note,
@@ -542,11 +574,12 @@ export const createPassPost = async (req: Request, res: Response, next: NextFunc
       addressProvince,
       addressDistrict,
       addressWard,
-      addressDetail,
       addressSlug: generateSlug(`${addressWard} ${addressDistrict} ${addressProvince}`),
+      addressDetail,
       addressLongitude,
       addressLatitude,
       ...(!!expirationAfter && { expirationAfter: expirationAfter }),
+      ...(!!expirationTime && { expirationTime: expirationTime.toDate() }),
       expirationAfterUnit
     };
     const insertPostResult = await insertPost(insertPostPayload);
@@ -1239,13 +1272,7 @@ export const updateRentalPost = async (req: Request, res: Response, next: NextFu
 
     if (!addressLongitude || !addressLatitude) {
       const address = `${addressDetail ? addressDetail : ''}, ${addressWard}, ${addressDistrict}, ${addressProvince}`;
-      const apiServices = [
-        () => geocodingByDistanceMatrix(address as string),
-        () => geocodingByGoong(address as string)
-      ];
-
-      const randomApiServiceIndex = Math.floor(Math.random() * apiServices.length);
-      await apiServices[randomApiServiceIndex]()
+      await geocodingByGoong(address as string)
         .then((getGeoCodingResult) => {
           addressLatitude = getGeoCodingResult.latitude;
           addressLongitude = getGeoCodingResult.longitude;
@@ -1259,6 +1286,20 @@ export const updateRentalPost = async (req: Request, res: Response, next: NextFu
       const temp = priceStart;
       priceStart = priceEnd;
       priceEnd = temp;
+    }
+
+    let expirationTime;
+    if (Number(expirationAfter) && Number(expirationAfter) !== existingPostResult[0].expirationAfter) {
+      expirationTime =
+        !expirationAfterUnit || expirationAfterUnit === 'day'
+          ? dayjs(existingPostResult[0].createdAt).add(Number(expirationAfter), 'day')
+          : expirationAfterUnit === 'hour'
+            ? dayjs(existingPostResult[0].createdAt).add(Number(expirationAfter), 'hour')
+            : expirationAfterUnit === 'week'
+              ? dayjs(existingPostResult[0].createdAt).add(Number(expirationAfter), 'week')
+              : dayjs(existingPostResult[0].createdAt).add(Number(expirationAfter), 'month');
+    } else if (!Number(expirationAfter)) {
+      expirationTime = timeInVietNam().add(99, 'year');
     }
 
     const updatePostPayload: Partial<postSchemaType> = {
@@ -1275,6 +1316,7 @@ export const updateRentalPost = async (req: Request, res: Response, next: NextFu
       addressLongitude,
       addressLatitude,
       ...(!!expirationAfter && { expirationAfter: expirationAfter }),
+      ...(!!expirationTime && { expirationTime: expirationTime.toDate() }),
       expirationAfterUnit
     };
     const updatePostDetailPayload: Partial<rentalPostSchemaType> = {
@@ -1391,18 +1433,26 @@ export const updateWantedPost = async (req: Request, res: Response, next: NextFu
 
     if (!addressLongitude || !addressLatitude) {
       const address = `${addressDetail ? addressDetail : ''}, ${addressWard}, ${addressDistrict}, ${addressProvince}`;
-      const apiServices = [
-        () => geocodingByDistanceMatrix(address as string),
-        () => geocodingByGoong(address as string)
-      ];
-
-      const randomApiServiceIndex = Math.floor(Math.random() * apiServices.length);
-      await apiServices[randomApiServiceIndex]()
+      await geocodingByGoong(address as string)
         .then((getGeoCodingResult) => {
           addressLatitude = getGeoCodingResult.latitude;
           addressLongitude = getGeoCodingResult.longitude;
         })
         .catch(() => {});
+    }
+
+    let expirationTime;
+    if (Number(expirationAfter) && Number(expirationAfter) !== existingPostResult[0].expirationAfter) {
+      expirationTime =
+        !expirationAfterUnit || expirationAfterUnit === 'day'
+          ? dayjs(existingPostResult[0].createdAt).add(Number(expirationAfter), 'day')
+          : expirationAfterUnit === 'hour'
+            ? dayjs(existingPostResult[0].createdAt).add(Number(expirationAfter), 'hour')
+            : expirationAfterUnit === 'week'
+              ? dayjs(existingPostResult[0].createdAt).add(Number(expirationAfter), 'week')
+              : dayjs(existingPostResult[0].createdAt).add(Number(expirationAfter), 'month');
+    } else if (!Number(expirationAfter)) {
+      expirationTime = timeInVietNam().add(99, 'year');
     }
 
     const updatePostPayload: Partial<postSchemaType> = {
@@ -1419,6 +1469,7 @@ export const updateWantedPost = async (req: Request, res: Response, next: NextFu
       addressLongitude,
       addressLatitude,
       ...(!!expirationAfter && { expirationAfter: expirationAfter }),
+      ...(!!expirationTime && { expirationTime: expirationTime.toDate() }),
       expirationAfterUnit
     };
     const updatePostDetailPayload: Partial<wantedPostSchemaType> = {
@@ -1524,9 +1575,26 @@ export const updateJoinPost = async (req: Request, res: Response, next: NextFunc
 
     if (!addressLatitude || !addressLongitude) {
       const address = `${addressDetail ? addressDetail : ''}, ${addressWard}, ${addressDistrict}, ${addressProvince}`;
-      const getGeoCodingResult = await geocodingByGeocodeMap(address);
-      addressLatitude = getGeoCodingResult.latitude;
-      addressLongitude = getGeoCodingResult.longitude;
+      await geocodingByGoong(address as string)
+        .then((getGeoCodingResult) => {
+          addressLatitude = getGeoCodingResult.latitude;
+          addressLongitude = getGeoCodingResult.longitude;
+        })
+        .catch(() => {});
+    }
+
+    let expirationTime;
+    if (Number(expirationAfter) && Number(expirationAfter) !== existingPostResult[0].expirationAfter) {
+      expirationTime =
+        !expirationAfterUnit || expirationAfterUnit === 'day'
+          ? dayjs(existingPostResult[0].createdAt).add(Number(expirationAfter), 'day')
+          : expirationAfterUnit === 'hour'
+            ? dayjs(existingPostResult[0].createdAt).add(Number(expirationAfter), 'hour')
+            : expirationAfterUnit === 'week'
+              ? dayjs(existingPostResult[0].createdAt).add(Number(expirationAfter), 'week')
+              : dayjs(existingPostResult[0].createdAt).add(Number(expirationAfter), 'month');
+    } else if (!Number(expirationAfter)) {
+      expirationTime = timeInVietNam().add(99, 'year');
     }
 
     const updatePostPayload: Partial<postSchemaType> = {
@@ -1543,6 +1611,7 @@ export const updateJoinPost = async (req: Request, res: Response, next: NextFunc
       addressLongitude,
       addressLatitude,
       ...(!!expirationAfter && { expirationAfter: expirationAfter }),
+      ...(!!expirationTime && { expirationTime: expirationTime.toDate() }),
       expirationAfterUnit
     };
     const updatePostDetailPayload: Partial<joinPostSchemaType> = {
@@ -1630,13 +1699,7 @@ export const updatePassPost = async (req: Request, res: Response, next: NextFunc
 
     if (!addressLongitude || !addressLatitude) {
       const address = `${addressDetail ? addressDetail : ''}, ${addressWard}, ${addressDistrict}, ${addressProvince}`;
-      const apiServices = [
-        () => geocodingByDistanceMatrix(address as string),
-        () => geocodingByGoong(address as string)
-      ];
-
-      const randomApiServiceIndex = Math.floor(Math.random() * apiServices.length);
-      await apiServices[randomApiServiceIndex]()
+      await geocodingByGoong(address as string)
         .then((getGeoCodingResult) => {
           addressLatitude = getGeoCodingResult.latitude;
           addressLongitude = getGeoCodingResult.longitude;
@@ -1650,6 +1713,20 @@ export const updatePassPost = async (req: Request, res: Response, next: NextFunc
 
     if (!passItems || !Array.isArray(passItems) || !passItems.length) {
       throw new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, 'passItems can not be empty');
+    }
+
+    let expirationTime;
+    if (Number(expirationAfter) && Number(expirationAfter) !== existingPostResult[0].expirationAfter) {
+      expirationTime =
+        !expirationAfterUnit || expirationAfterUnit === 'day'
+          ? dayjs(existingPostResult[0].createdAt).add(Number(expirationAfter), 'day')
+          : expirationAfterUnit === 'hour'
+            ? dayjs(existingPostResult[0].createdAt).add(Number(expirationAfter), 'hour')
+            : expirationAfterUnit === 'week'
+              ? dayjs(existingPostResult[0].createdAt).add(Number(expirationAfter), 'week')
+              : dayjs(existingPostResult[0].createdAt).add(Number(expirationAfter), 'month');
+    } else if (!Number(expirationAfter)) {
+      expirationTime = timeInVietNam().add(99, 'year');
     }
 
     const updatePostPayload: Partial<postSchemaType> = {
@@ -1666,9 +1743,9 @@ export const updatePassPost = async (req: Request, res: Response, next: NextFunc
       addressLongitude,
       addressLatitude,
       ...(!!expirationAfter && { expirationAfter: expirationAfter }),
+      ...(!!expirationTime && { expirationTime: expirationTime.toDate() }),
       expirationAfterUnit
     };
-
     const passItemsPrice = passItems.map((item) => item.passItemPrice as number);
     const updatePassPostPayload: Partial<passPostSchemaType> = {
       priceStart: Math.min(...passItemsPrice),
@@ -1898,6 +1975,55 @@ export const removeUserPostInterested = async (req: Request, res: Response, next
     });
 
     return new ApiResponse(StatusCodes.OK, ReasonPhrases.OK, 'Delete interested user post successfully').send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const renewPost = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const currentUser = req.currentUser;
+    const { users_detail } = currentUser!;
+    const { expirationAfter, expirationAfterUnit } = req.body;
+    const { postId } = req.params;
+
+    if (!postId || !Number.isSafeInteger(Number(postId))) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
+    }
+    const existingPost = await selectPostById(Number(postId));
+    if (!existingPost.length) {
+      throw new ApiError(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND);
+    }
+    if (
+      !checkUserAndPostPermission(users_detail.role!, existingPost[0].type) ||
+      existingPost[0].ownerId !== users_detail.userId
+    ) {
+      throw new ApiError(StatusCodes.FORBIDDEN, ReasonPhrases.FORBIDDEN);
+    }
+
+    let expirationTime;
+    if (Number(expirationAfter)) {
+      expirationTime =
+        !expirationAfterUnit || expirationAfterUnit === 'day'
+          ? timeInVietNam().add(Number(expirationAfter), 'day')
+          : expirationAfterUnit === 'hour'
+            ? timeInVietNam().add(Number(expirationAfter), 'hour')
+            : expirationAfterUnit === 'week'
+              ? timeInVietNam().add(Number(expirationAfter), 'week')
+              : timeInVietNam().add(Number(expirationAfter), 'month');
+    } else if (!Number(expirationAfter)) {
+      expirationTime = timeInVietNam().add(99, 'year');
+    }
+
+    const updatePostPayload: Partial<postSchemaType> = {
+      expirationAfter,
+      expirationAfterUnit,
+      expirationTime: expirationTime?.toDate(),
+      status: 'actived'
+    };
+    await updatePostById(existingPost[0].id, updatePostPayload);
+
+    return new ApiResponse(StatusCodes.OK, 'Renew post successfully!', { postId: existingPost[0].id }).send(res);
   } catch (error) {
     next(error);
   }

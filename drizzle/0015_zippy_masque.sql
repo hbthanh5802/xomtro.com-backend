@@ -1,0 +1,1 @@
+ALTER TABLE `posts` ADD `expiration_time` datetime;
