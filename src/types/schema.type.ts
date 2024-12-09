@@ -52,7 +52,8 @@ export enum timeUnit {
 
 export enum postStatus {
   ACTIVED = 'actived',
-  UNACTIVED = 'unactived'
+  UNACTIVED = 'unactived',
+  HIDDEN = 'hidden'
 }
 
 export enum postType {
