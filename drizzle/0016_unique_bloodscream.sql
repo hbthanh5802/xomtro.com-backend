@@ -1,0 +1,1 @@
+ALTER TABLE `posts` MODIFY COLUMN `status` enum('actived','unactived','hidden') DEFAULT 'actived';

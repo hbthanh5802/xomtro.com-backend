@@ -1110,7 +1110,7 @@ export const hiddenPostById = async (req: Request, res: Response, next: NextFunc
       throw new ApiError(StatusCodes.FORBIDDEN, ReasonPhrases.FORBIDDEN);
     }
 
-    const willUpdateStatus = post.status === 'actived' ? postStatus.UNACTIVED : postStatus.ACTIVED;
+    const willUpdateStatus = post.status === 'actived' ? postStatus.HIDDEN : postStatus.ACTIVED;
     await updatePostById(post.id, { status: willUpdateStatus });
 
     return new ApiResponse(StatusCodes.OK, 'Change post status successfully!', { status: willUpdateStatus }).send(res);
