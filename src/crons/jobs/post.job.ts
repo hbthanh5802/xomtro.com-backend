@@ -20,8 +20,8 @@ const executeRevokeExpirePost = async () => {
   try {
     const willExpiredPosts = await selectPostsByConditions({
       status: {
-        operator: 'eq',
-        value: 'actived'
+        operator: 'ne',
+        value: 'unactived'
       },
       expirationTime: {
         operator: 'lt',
@@ -33,8 +33,8 @@ const executeRevokeExpirePost = async () => {
         { status: 'unactived' },
         {
           status: {
-            operator: 'eq',
-            value: 'actived'
+            operator: 'ne',
+            value: 'unactived'
           },
           expirationTime: {
             operator: 'lt',

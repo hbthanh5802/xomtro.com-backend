@@ -326,11 +326,11 @@ export const getForgotPassword = async (req: Request, res: Response, next: NextF
     });
     //
     const otpCode = generateOtpCode();
-    const expirationTime = timeInVietNam().add(5, 'minute').toDate();
+    const expirationTime = timeInVietNam().add(5, 'minute');
     const tokenPayload: tokenSchemaType = {
       type: 'otp',
       value: otpCode,
-      expirationTime,
+      expirationTime: expirationTime.toDate(),
       userId: existingUser[0].userId,
       target: 'password'
     };
