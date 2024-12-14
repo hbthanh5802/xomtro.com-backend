@@ -40,6 +40,7 @@ import { formatTimeForVietnamese, timeInVietNam } from '@/utils/time.helper';
 import { generateOtpCode, tokenPayloadType } from '@/utils/token.helper';
 import bcrypt from 'bcrypt';
 import { UploadApiResponse } from 'cloudinary';
+import dayjs from 'dayjs';
 import { NextFunction, Request, Response } from 'express';
 import { ReasonPhrases, StatusCodes } from 'http-status-codes';
 import { searchAddressByConditions } from '../services/address.service';
@@ -477,7 +478,7 @@ export const updateUserProfile = async (req: Request, res: Response, next: NextF
       lastName,
       phone,
       gender,
-      dob: dob && new Date(dob),
+      dob: dob && dayjs.utc(dob).toDate(),
       role
     };
     await updateUserDetailById(users_detail.userId!, cleanObject(updateProfilePayload));

@@ -38,8 +38,8 @@ export const userDetail = mysqlTable('users_detail', {
   role: mysqlEnum(['renter', 'landlord']),
   email: varchar({ length: 255 }).unique().notNull(),
   bio: text(),
-  phone: varchar({ length: 25 }).notNull(),
-  firstName: varchar('first_name', { length: 50 }).notNull(),
+  phone: varchar({ length: 25 }),
+  firstName: varchar('first_name', { length: 50 }),
   lastName: varchar('last_name', { length: 50 }).notNull(),
   gender: mysqlEnum(['male', 'female', 'others']),
   dob: datetime(),
@@ -131,23 +131,23 @@ export const assets = mysqlTable(
   })
 );
 
-export const properties = mysqlTable('properties', {
-  id: int().primaryKey().autoincrement(),
-  ownerId: int('owner_id').references(() => users.id, {
-    onDelete: 'cascade',
-    onUpdate: 'cascade'
-  }),
-  addressId: int('address_id').references(() => addresses.id, {
-    onDelete: 'cascade',
-    onUpdate: 'cascade'
-  }),
-  totalArea: float('total_area'),
-  totalAreaUnit: mysqlEnum(['cm2', 'm2', 'km2']).default('m2'),
-  priceRangeStart: int('price_range_start').default(0),
-  priceRangeEnd: int('price_range_end'),
-  isActived: boolean('is_actived').default(true),
-  ...timestamps
-});
+// export const properties = mysqlTable('properties', {
+//   id: int().primaryKey().autoincrement(),
+//   ownerId: int('owner_id').references(() => users.id, {
+//     onDelete: 'cascade',
+//     onUpdate: 'cascade'
+//   }),
+//   addressId: int('address_id').references(() => addresses.id, {
+//     onDelete: 'cascade',
+//     onUpdate: 'cascade'
+//   }),
+//   totalArea: float('total_area'),
+//   totalAreaUnit: mysqlEnum(['cm2', 'm2', 'km2']).default('m2'),
+//   priceRangeStart: int('price_range_start').default(0),
+//   priceRangeEnd: int('price_range_end'),
+//   isActived: boolean('is_actived').default(true),
+//   ...timestamps
+// });
 
 export const posts = mysqlTable('posts', {
   id: int().primaryKey().autoincrement(),
@@ -212,7 +212,7 @@ export const rentalPosts = mysqlTable('rental_posts', {
   minLeaseTerm: int('min_lease_term').notNull(),
   minLeaseTermUnit: mysqlEnum('min_lease_term_unit', ['hour', 'day', 'month', 'year']).notNull(),
   totalArea: float('total_area'),
-  totalAreaUnit: mysqlEnum(['cm2', 'm2', 'km2']).default('m2'),
+  totalAreaUnit: mysqlEnum('total_area_unit', ['cm2', 'm2', 'km2']).default('m2'),
   ...room_amenities
 });
 
@@ -229,7 +229,7 @@ export const wantedPosts = mysqlTable('wanted_posts', {
   priceUnit: mysqlEnum('price_unit', ['vnd', 'usd']).default('vnd'),
   moveInDate: datetime('move_in_date').notNull(),
   totalArea: float('total_area'),
-  totalAreaUnit: mysqlEnum(['cm2', 'm2', 'km2']).default('m2'),
+  totalAreaUnit: mysqlEnum('total_area_unit', ['cm2', 'm2', 'km2']).default('m2'),
   ...room_amenities
 });
 
@@ -246,7 +246,7 @@ export const joinPosts = mysqlTable('join_posts', {
   priceUnit: mysqlEnum('price_unit', ['vnd', 'usd']).default('vnd'),
   moveInDate: datetime('move_in_date').notNull(),
   totalArea: float('total_area'),
-  totalAreaUnit: mysqlEnum(['cm2', 'm2', 'km2']).default('m2'),
+  totalAreaUnit: mysqlEnum('total_area_unit', ['cm2', 'm2', 'km2']).default('m2'),
   ...room_amenities
 });
 
@@ -279,6 +279,7 @@ export const passPostItems = mysqlTable('pass_post_items', {
 
 export const postComments = mysqlTable('post_comments', {
   id: int().primaryKey().autoincrement(),
+  tags: varchar({ length: 255 }),
   content: text().notNull(),
   postId: int('post_id')
     .notNull()
@@ -355,7 +356,7 @@ export const userContacts = mysqlTable('user_contacts', {
       onUpdate: 'cascade'
     }),
   contactType: mysqlEnum('contact_type', ['facebook', 'email', 'phone', 'zalo', 'other']).default('other'),
-  contactContent: varchar('pass_item_name', { length: 255 }).notNull(),
+  contactContent: varchar('contact_content', { length: 255 }).notNull(),
   isActived: boolean('is_actived').default(true),
   ...timestamps
 });
@@ -394,7 +395,7 @@ export const messages = mysqlTable(
   'messages',
   {
     id: int().primaryKey().autoincrement(),
-    chatId: int().references(() => chats.id, {
+    chatId: int('chat_id').references(() => chats.id, {
       onDelete: 'cascade',
       onUpdate: 'cascade'
     }),
@@ -421,7 +422,7 @@ export const messages = mysqlTable(
 
 export const notifications = mysqlTable('notifications', {
   id: int().primaryKey().autoincrement(),
-  type: mysqlEnum(['chat', 'post', 'account']).notNull(),
+  type: mysqlEnum(['chat', 'post', 'account', 'general']).notNull(),
   title: varchar({ length: 255 }).notNull(),
   content: text(),
   isRead: boolean('is_read').default(false),

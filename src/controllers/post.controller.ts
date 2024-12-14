@@ -451,7 +451,7 @@ export const createJoinPost = async (req: Request, res: Response, next: NextFunc
     }
     const insertPostPayload: postSchemaType = {
       ownerId: users.id,
-      type: 'wanted',
+      type: 'join',
       title,
       titleSlug: generateSlug(title),
       note,
@@ -565,7 +565,7 @@ export const createPassPost = async (req: Request, res: Response, next: NextFunc
     }
     const insertPostPayload: postSchemaType = {
       ownerId: users.id,
-      type: 'wanted',
+      type: 'pass',
       title,
       titleSlug: generateSlug(title),
       note,
