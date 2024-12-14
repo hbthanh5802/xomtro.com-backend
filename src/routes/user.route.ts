@@ -62,7 +62,7 @@ router.put(
   validationAsync(updateUserProfileValidation),
   userController.updateUserProfile
 );
-
+// Get use profile
 router.get('/:userId', userController.getUserProfile);
 
 // Get user interested posts
