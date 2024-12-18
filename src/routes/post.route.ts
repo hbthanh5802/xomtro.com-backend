@@ -2,6 +2,7 @@ import * as postController from '@/controllers/post.controller';
 import * as authMiddleware from '@/middlewares/auth.middleware';
 import { uploadMiddleware } from '@/middlewares/upload.middleware';
 import { validationAsync } from '@/middlewares/validationSchema.middleware';
+import { insertPostCommentValidation } from '@/validations/commentValidation';
 import {
   insertJoinPostValidation,
   insertPassPostItemValidation,
@@ -48,6 +49,13 @@ router.post(
 );
 // Add a new interested post
 router.post('/interested', authMiddleware.verifyUser, postController.createUserPostInterested);
+// Create a post comment
+router.post(
+  '/comments',
+  authMiddleware.verifyUser,
+  validationAsync(insertPostCommentValidation),
+  postController.createComment
+);
 
 // -- GET
 // Get full post detail
@@ -56,6 +64,8 @@ router.get('/:postId', postController.getPostById);
 router.post('/search/pass', postController.searchPassPosts);
 // Search others post type
 router.post('/search/:type', postController.searchPosts);
+// GET post comments
+router.post('/:postId/comments', postController.getPostComments);
 
 // -- UPDATE
 // Change post status
@@ -103,6 +113,13 @@ router.put(
 );
 // Renew existing post
 router.put('/:postId/renew', authMiddleware.verifyUser, postController.renewPost);
+// Update existing post comments
+router.put(
+  '/comments/:commentId',
+  authMiddleware.verifyUser,
+  validationAsync(insertPostCommentValidation),
+  postController.updateComment
+);
 
 // -- DELETE
 // Remove pass post items by id list
@@ -113,5 +130,7 @@ router.delete('/:postId/assets', authMiddleware.verifyUser, postController.remov
 router.delete('/:postId', authMiddleware.verifyUser, postController.removePostById);
 // Remove a interested post
 router.delete('/interested/:postId', authMiddleware.verifyUser, postController.removeUserPostInterested);
+// Remove a comment
+router.delete('/comments/:commentId', authMiddleware.verifyUser, postController.removeComment);
 
 export default router;

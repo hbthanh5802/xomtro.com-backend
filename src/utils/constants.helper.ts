@@ -45,10 +45,7 @@ export const cleanObject = (obj: Record<string, any>) => {
   let transformedData = structuredClone(obj);
   transformedData = Object.fromEntries(
     Object.entries(transformedData)
-      .filter(
-        ([_, value]) =>
-          value !== null && value !== '' && !Number.isNaN(value) && value !== undefined && value !== 'undefined'
-      )
+      .filter(([_, value]) => value !== null && !Number.isNaN(value) && value !== undefined && value !== 'undefined')
       .map(([key, value]) => [key, parseValue(value)])
   );
 
