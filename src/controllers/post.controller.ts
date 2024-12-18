@@ -1,4 +1,12 @@
 import { insertAsset } from '@/services/asset.service';
+import {
+  deleteCommentByConditions,
+  insertComment,
+  selectCommentByConditions,
+  selectDirectChildCommentsFromParentCommentId,
+  selectPostLevel1Comments,
+  updateCommentByCommentId
+} from '@/services/comment.service';
 import { deleteManyResources, uploadImage } from '@/services/fileUpload.service';
 import { geocodingByGoong } from '@/services/location.service';
 import {
@@ -37,6 +45,8 @@ import {
 } from '@/services/post.service';
 import { ConditionsType } from '@/types/drizzle.type';
 import {
+  PostCommentInsertSchemaType,
+  PostCommentSelectSchemaType,
   UserPostInterestedSelectSchemaType,
   assetSchemaType,
   assetType,
@@ -2024,6 +2034,181 @@ export const renewPost = async (req: Request, res: Response, next: NextFunction)
     await updatePostById(existingPost[0].id, updatePostPayload);
 
     return new ApiResponse(StatusCodes.OK, 'Renew post successfully!', { postId: existingPost[0].id }).send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const createComment = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const currentUser = req.currentUser;
+    const { users } = currentUser!;
+    const { postId, content, tags, parentCommentId } = req.body;
+
+    const existingPost = await selectPostById(Number(postId));
+    if (!existingPost.length) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
+    }
+
+    const insertCommentPayload: PostCommentInsertSchemaType = {
+      postId: existingPost[0].id,
+      ownerId: users.id,
+      content: content ? content : '',
+      ...(tags && { tags: tags }),
+      ...(parentCommentId && { parentCommentId: Number(parentCommentId) })
+    };
+    const insertCommentResult = await insertComment(insertCommentPayload);
+    const commentId = insertCommentResult[0][0][0].id;
+    const justInsertedComment = await selectCommentByConditions({ id: { operator: 'eq', value: commentId } });
+
+    return new ApiResponse(StatusCodes.CREATED, 'Create a comment successfully!', justInsertedComment).send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateComment = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const currentUser = req.currentUser;
+    const { users } = currentUser!;
+    const { commentId } = req.params;
+    const { content, tags } = req.body;
+
+    if (!commentId || !Number.isSafeInteger(Number(commentId))) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
+    }
+
+    const existingComment = await selectCommentByConditions({
+      id: { operator: 'eq', value: Number(commentId) },
+      ownerId: { operator: 'eq', value: users.id! }
+    });
+    if (!existingComment.length) {
+      throw new ApiError(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND);
+    }
+
+    const insertCommentPayload: Partial<PostCommentInsertSchemaType> = {
+      content,
+      tags: tags ? tags : ''
+    };
+    await updateCommentByCommentId(existingComment[0].id, insertCommentPayload);
+    const justUpdatedComment = await selectCommentByConditions({
+      id: { operator: 'eq', value: Number(commentId) }
+    });
+
+    return new ApiResponse(StatusCodes.OK, 'Update comment successfully!', justUpdatedComment[0]).send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const removeComment = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const currentUser = req.currentUser;
+    const { users } = currentUser!;
+    const { commentId } = req.params;
+
+    if (!commentId || !Number.isSafeInteger(Number(commentId))) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
+    }
+
+    const existingComment = await selectCommentByConditions({
+      id: { operator: 'eq', value: Number(commentId) },
+      ownerId: { operator: 'eq', value: users.id! }
+    });
+    if (!existingComment.length) {
+      throw new ApiError(StatusCodes.NOT_FOUND, ReasonPhrases.NOT_FOUND);
+    }
+
+    await deleteCommentByConditions({
+      id: { operator: 'eq', value: Number(commentId) },
+      ownerId: { operator: 'eq', value: users.id! }
+    });
+
+    return new ApiResponse(StatusCodes.OK, 'Delete comment successfully!', { id: existingComment[0].id }).send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getPostComments = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { postId } = req.params;
+    const { whereConditions, orderConditions, pagination } = req.body;
+
+    if (!postId || !Number.isSafeInteger(Number(postId))) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
+    }
+
+    if (!whereConditions || !orderConditions) {
+      throw new ApiError(
+        StatusCodes.UNPROCESSABLE_ENTITY,
+        'whereConditions or orderConditions is required, but it can be empty'
+      );
+    }
+
+    const existingPost = await selectPostById(Number(postId));
+    if (!existingPost.length) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'Post does not exist!');
+    }
+
+    const { parentCommentId } = whereConditions;
+    const { updatedAt } = orderConditions;
+
+    if (parentCommentId && !Number.isSafeInteger(Number(parentCommentId))) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
+    }
+
+    const options: selectOptions<PostCommentSelectSchemaType> = {
+      orderConditions: {
+        ...(updatedAt && { updatedAt })
+      },
+      ...(pagination && {
+        pagination: {
+          page: pagination?.page,
+          pageSize: pagination?.pageSize
+        }
+      })
+    };
+
+    if (!parentCommentId) {
+      const totalComment = await selectPostLevel1Comments(existingPost[0].id, {
+        ...options,
+        pagination: {
+          page: pagination?.page,
+          pageSize: 999999
+        }
+      });
+      const selectCommentResult = await selectPostLevel1Comments(existingPost[0].id, options);
+      return new ApiResponse(StatusCodes.OK, ReasonPhrases.OK, {
+        results: selectCommentResult,
+        pagination: paginationHelper({
+          total: totalComment.length,
+          page: pagination?.page,
+          pageSize: pagination?.pageSize
+        })
+      }).send(res);
+    } else {
+      const where: ConditionsType<PostCommentSelectSchemaType> = {
+        postId: { operator: 'eq', value: existingPost[0].id },
+        parentCommentId: { operator: 'eq', value: Number(parentCommentId) }
+      };
+      const totalComment = await selectDirectChildCommentsFromParentCommentId(where, {
+        ...options,
+        pagination: {
+          page: pagination?.page,
+          pageSize: 999999
+        }
+      });
+      const selectCommentResult = await selectDirectChildCommentsFromParentCommentId(where, options);
+      return new ApiResponse(StatusCodes.OK, ReasonPhrases.OK, {
+        results: selectCommentResult,
+        pagination: paginationHelper({
+          total: totalComment.length,
+          page: pagination?.page,
+          pageSize: pagination?.pageSize
+        })
+      }).send(res);
+    }
   } catch (error) {
     next(error);
   }

@@ -1,6 +1,7 @@
 import { timestamps } from '@/utils/schema.helper';
 import { sql } from 'drizzle-orm';
 import {
+  AnyMySqlColumn,
   boolean,
   datetime,
   decimal,
@@ -13,6 +14,7 @@ import {
   primaryKey,
   text,
   timestamp,
+  tinyint,
   unique,
   varchar
 } from 'drizzle-orm/mysql-core';
@@ -279,6 +281,10 @@ export const passPostItems = mysqlTable('pass_post_items', {
 
 export const postComments = mysqlTable('post_comments', {
   id: int().primaryKey().autoincrement(),
+  ownerId: int('owner_id').references(() => users.id, {
+    onDelete: 'cascade',
+    onUpdate: 'cascade'
+  }),
   tags: varchar({ length: 255 }),
   content: text().notNull(),
   postId: int('post_id')
@@ -287,6 +293,10 @@ export const postComments = mysqlTable('post_comments', {
       onDelete: 'cascade',
       onUpdate: 'cascade'
     }),
+  parentCommentId: int('parent_comment_id').references((): AnyMySqlColumn => postComments.id, {
+    onDelete: 'cascade',
+    onUpdate: 'cascade'
+  }),
   ...timestamps
 });
 
@@ -305,7 +315,7 @@ export const postCommentClosures = mysqlTable(
         onDelete: 'cascade',
         onUpdate: 'cascade'
       }),
-    depth: int().notNull()
+    depth: tinyint().notNull()
   },
   (table) => ({
     pkPostCommentClosures: primaryKey({

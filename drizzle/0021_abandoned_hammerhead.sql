@@ -1,0 +1,1 @@
+ALTER TABLE `post_comment_closures` MODIFY COLUMN `depth` tinyint NOT NULL;
