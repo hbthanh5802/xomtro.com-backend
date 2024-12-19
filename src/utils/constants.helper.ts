@@ -1,4 +1,4 @@
-export const WHITELIST_DOMAIN = ['http://localhost:4444'];
+export const WHITELIST_DOMAIN = ['http://localhost:4444', 'https://xomtro.netlify.app'];
 
 export const generateSlug = (str: string) => {
   if (!str) return '';
