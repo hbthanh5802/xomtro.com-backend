@@ -1,21 +1,7 @@
 import { selectPostsByConditions, updatePostByConditions } from '@/services/post.service';
 import { timeInVietNam } from '@/utils/time.helper';
-import cron from 'node-cron';
 
-export const revokeExpirePost = () => {
-  cron.schedule(
-    '*/1 * * * *',
-    async () => {
-      await executeRevokeExpirePost();
-      setTimeout(async () => {
-        await executeRevokeExpirePost();
-      }, 30 * 1000); // 30 giây
-    },
-    { scheduled: true }
-  );
-};
-
-const executeRevokeExpirePost = async () => {
+export const revokeExpirePost = async () => {
   const now = timeInVietNam().toDate();
   try {
     const willExpiredPosts = await selectPostsByConditions({

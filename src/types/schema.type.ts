@@ -113,7 +113,8 @@ export enum messageType {
 export enum notificationType {
   CHAT = 'chat',
   POST = 'post',
-  ACCOUNT = 'account'
+  ACCOUNT = 'account',
+  GENERAL = 'general'
 }
 
 export enum userContactType {
@@ -145,6 +146,7 @@ export type ChatInsertSchemaType = typeof schema.chats.$inferInsert;
 export type ChatMemberInsertSchemaType = typeof schema.chatMembers.$inferInsert;
 export type MessageInsertSchemaType = typeof schema.messages.$inferInsert;
 export type PostCommentInsertSchemaType = typeof schema.postComments.$inferInsert;
+export type NotificationInsertSchemaType = typeof schema.notifications.$inferInsert;
 
 // SELECT
 export type UserPostInterestedSelectSchemaType = typeof schema.userPostsInterested.$inferSelect;
@@ -156,3 +158,4 @@ export type ChatSelectSchemaType = typeof schema.chats.$inferSelect;
 export type ChatMemberSelectSchemaType = typeof schema.chatMembers.$inferSelect;
 export type MessageSelectSchemaType = typeof schema.messages.$inferSelect;
 export type PostCommentSelectSchemaType = typeof schema.postComments.$inferSelect;
+export type NotificationSelectSchemaType = typeof schema.notifications.$inferSelect;
