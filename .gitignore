@@ -16,7 +16,6 @@ logs
 # TypeScript
 *.tsbuildinfo
 *.tscache
-*.d.ts
 coverage
 *.js
 *.js.map
