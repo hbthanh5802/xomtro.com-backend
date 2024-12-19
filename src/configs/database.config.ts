@@ -15,7 +15,7 @@ export const checkDatabaseConnection = async () => {
     const connection = await pool.getConnection();
     await connection.ping();
     connection.release();
-    console.log('[SUCCESS ✅] Database connection established successfully!');
+    console.log(`[SUCCESS ✅] Database connection established successfully! ${env.DB_NAME}`);
   } catch (error) {
     console.error('[ERROR ❌] Database connection failed:', error);
     throw error;

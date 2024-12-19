@@ -219,6 +219,110 @@ export const selectFullPostDetailById = async (
   }
 };
 
+// export const selectRentalPostByConditions = async <T extends selectRentalPostByConditionType & { radius?: number }>(
+//   conditions?: ConditionsType<T>,
+//   options?: selectOptions<selectRentalPostByConditionType>
+// ) => {
+//   try {
+//     // Chuẩn bị `whereClause`
+//     let whereClause: (SQLWrapper | undefined)[] = [];
+//     if (conditions) {
+//       whereClause = Object.entries(conditions).map(([field, condition]) => {
+//         if (field !== 'addressLongitude' && field !== 'addressLatitude' && field !== 'radius') {
+//           return processCondition(field, condition, { ...posts, ...rentalPosts } as any);
+//         }
+//       });
+//     }
+
+//     const hasLocationFilter = Boolean(
+//       conditions?.addressLongitude && conditions?.addressLatitude && conditions?.radius
+//     );
+
+//     if (hasLocationFilter) {
+//       whereClause.push(
+//         sql<number>`calculate_distance(${posts.addressLatitude},${posts.addressLongitude},${conditions?.addressLatitude?.value},${conditions?.addressLongitude?.value}) <= ${conditions?.radius}`
+//       );
+//     }
+
+//     // Xử lý order conditions
+//     let orderClause: SQLWrapper[] = [];
+//     if (options?.orderConditions) {
+//       const { orderConditions } = options;
+//       orderClause = Object.entries(orderConditions).map(([field, direction]) => {
+//         return processOrderCondition(field, direction, { ...posts, ...rentalPosts } as any);
+//       });
+//     }
+
+//     // BƯỚC 1: Lấy danh sách `post.id` theo pagination
+//     const pagination = options?.pagination;
+//     let postIdsQuery = db
+//       .select({ id: posts.id })
+//       .from(posts)
+//       .leftJoin(rentalPosts, eq(rentalPosts.postId, posts.id))
+//       .$dynamic();
+
+//     if (whereClause.length) {
+//       postIdsQuery = postIdsQuery.where(and(...whereClause)).$dynamic();
+//     }
+//     if (orderClause.length) {
+//       postIdsQuery = postIdsQuery.orderBy(...(orderClause as any)).$dynamic();
+//     }
+//     if (options?.pagination) {
+//       postIdsQuery = withPagination(postIdsQuery, pagination?.page, pagination?.pageSize);
+//     }
+
+//     const postIds = (await postIdsQuery).map((p) => p.id);
+
+//     if (!postIds.length) {
+//       // Không có kết quả phù hợp
+//       return [];
+//     }
+
+//     // BƯỚC 2: JOIN các bảng liên quan dựa trên danh sách `post.id`
+//     let query = db
+//       .select({
+//         post: posts,
+//         asset: assetModel,
+//         rentalPost: rentalPosts,
+//         ...(hasLocationFilter && {
+//           distance: sql<number>`calculate_distance(${posts.addressLatitude},${posts.addressLongitude},${conditions?.addressLatitude?.value},${conditions?.addressLongitude?.value})`
+//         })
+//       })
+//       .from(posts)
+//       .leftJoin(postAssets, eq(postAssets.postId, posts.id))
+//       .leftJoin(assetModel, eq(assetModel.id, postAssets.assetId))
+//       .leftJoin(rentalPosts, eq(rentalPosts.postId, posts.id))
+//       .where(inArray(posts.id, postIds))
+//       .$dynamic();
+
+//     if (orderClause.length) {
+//       query = query.orderBy(...(orderClause as any)).$dynamic();
+//     }
+//     const rawData = await query;
+
+//     // Xử lý kết quả: Gom nhóm `assets` theo từng `post`
+//     const formattedResponse: fullPostResponseType[] = rawData.reduce((acc, item) => {
+//       let postResponseItem = acc.find((p) => p.post.id === item.post.id);
+//       if (!postResponseItem) {
+//         postResponseItem = {
+//           assets: [],
+//           detail: item.rentalPost!,
+//           post: item.post,
+//           distance: item.distance
+//         };
+//         acc.push(postResponseItem);
+//       }
+//       if (item.asset) postResponseItem.assets.push(item.asset);
+
+//       return acc;
+//     }, [] as fullPostResponseType[]);
+
+//     return formattedResponse;
+//   } catch (error) {
+//     throw error;
+//   }
+// };
+
 export const selectRentalPostByConditions = async <T extends selectRentalPostByConditionType & { radius?: number }>(
   conditions?: ConditionsType<T>,
   options?: selectOptions<selectRentalPostByConditionType>
@@ -240,7 +344,7 @@ export const selectRentalPostByConditions = async <T extends selectRentalPostByC
 
     if (hasLocationFilter) {
       whereClause.push(
-        sql<number>`calculate_distance(${posts.addressLatitude},${posts.addressLongitude},${conditions?.addressLatitude?.value},${conditions?.addressLongitude?.value}) <= ${conditions?.radius}`
+        sql<number>`6371 * 2 * ASIN(SQRT(POW(SIN(RADIANS(${posts.addressLatitude}) - RADIANS(${conditions?.addressLatitude?.value})) / 2, 2) + COS(RADIANS(${posts.addressLatitude})) * COS(RADIANS(${conditions?.addressLatitude?.value})) * POW(SIN(RADIANS(${posts.addressLongitude}) - RADIANS(${conditions?.addressLongitude?.value})) / 2, 2))) <= ${conditions?.radius}`
       );
     }
 
@@ -271,6 +375,7 @@ export const selectRentalPostByConditions = async <T extends selectRentalPostByC
       postIdsQuery = withPagination(postIdsQuery, pagination?.page, pagination?.pageSize);
     }
 
+    console.log(postIdsQuery.toSQL());
     const postIds = (await postIdsQuery).map((p) => p.id);
 
     if (!postIds.length) {
@@ -285,7 +390,7 @@ export const selectRentalPostByConditions = async <T extends selectRentalPostByC
         asset: assetModel,
         rentalPost: rentalPosts,
         ...(hasLocationFilter && {
-          distance: sql<number>`calculate_distance(${posts.addressLatitude},${posts.addressLongitude},${conditions?.addressLatitude?.value},${conditions?.addressLongitude?.value})`
+          distance: sql<number>`6371 * 2 * ASIN(SQRT(POW(SIN(RADIANS(${posts.addressLatitude}) - RADIANS(${conditions?.addressLatitude?.value})) / 2, 2) + COS(RADIANS(${posts.addressLatitude})) * COS(RADIANS(${conditions?.addressLatitude?.value})) * POW(SIN(RADIANS(${posts.addressLongitude}) - RADIANS(${conditions?.addressLongitude?.value})) / 2, 2)))`
         })
       })
       .from(posts)
@@ -298,6 +403,7 @@ export const selectRentalPostByConditions = async <T extends selectRentalPostByC
     if (orderClause.length) {
       query = query.orderBy(...(orderClause as any)).$dynamic();
     }
+
     const rawData = await query;
 
     // Xử lý kết quả: Gom nhóm `assets` theo từng `post`
@@ -343,7 +449,7 @@ export const selectJoinPostByConditions = async <T extends selectJoinPostByCondi
 
     if (hasLocationFilter) {
       whereClause.push(
-        sql<number>`calculate_distance(${posts.addressLatitude},${posts.addressLongitude},${conditions?.addressLatitude?.value},${conditions?.addressLongitude?.value}) <= ${conditions?.radius}`
+        sql<number>`6371 * 2 * ASIN(SQRT(POW(SIN(RADIANS(${posts.addressLatitude}) - RADIANS(${conditions?.addressLatitude?.value})) / 2, 2) + COS(RADIANS(${posts.addressLatitude})) * COS(RADIANS(${conditions?.addressLatitude?.value})) * POW(SIN(RADIANS(${posts.addressLongitude}) - RADIANS(${conditions?.addressLongitude?.value})) / 2, 2))) <= ${conditions?.radius}`
       );
     }
 
@@ -387,7 +493,7 @@ export const selectJoinPostByConditions = async <T extends selectJoinPostByCondi
         asset: assetModel,
         joinPost: joinPosts,
         ...(hasLocationFilter && {
-          distance: sql<number>`calculate_distance(${posts.addressLatitude},${posts.addressLongitude},${conditions?.addressLatitude?.value},${conditions?.addressLongitude?.value})`
+          distance: sql<number>`6371 * 2 * ASIN(SQRT(POW(SIN(RADIANS(${posts.addressLatitude}) - RADIANS(${conditions?.addressLatitude?.value})) / 2, 2) + COS(RADIANS(${posts.addressLatitude})) * COS(RADIANS(${conditions?.addressLatitude?.value})) * POW(SIN(RADIANS(${posts.addressLongitude}) - RADIANS(${conditions?.addressLongitude?.value})) / 2, 2)))`
         })
       })
       .from(posts)
@@ -445,7 +551,7 @@ export const selectWantedPostByConditions = async <T extends selectWantedPostByC
 
     if (hasLocationFilter) {
       whereClause.push(
-        sql<number>`calculate_distance(${posts.addressLatitude},${posts.addressLongitude},${conditions?.addressLatitude?.value},${conditions?.addressLongitude?.value}) <= ${conditions?.radius}`
+        sql<number>`6371 * 2 * ASIN(SQRT(POW(SIN(RADIANS(${posts.addressLatitude}) - RADIANS(${conditions?.addressLatitude?.value})) / 2, 2) + COS(RADIANS(${posts.addressLatitude})) * COS(RADIANS(${conditions?.addressLatitude?.value})) * POW(SIN(RADIANS(${posts.addressLongitude}) - RADIANS(${conditions?.addressLongitude?.value})) / 2, 2))) <= ${conditions?.radius}`
       );
     }
 
@@ -489,7 +595,7 @@ export const selectWantedPostByConditions = async <T extends selectWantedPostByC
         asset: assetModel,
         wantedPost: wantedPosts,
         ...(hasLocationFilter && {
-          distance: sql<number>`calculate_distance(${posts.addressLatitude},${posts.addressLongitude},${conditions?.addressLatitude?.value},${conditions?.addressLongitude?.value})`
+          distance: sql<number>`6371 * 2 * ASIN(SQRT(POW(SIN(RADIANS(${posts.addressLatitude}) - RADIANS(${conditions?.addressLatitude?.value})) / 2, 2) + COS(RADIANS(${posts.addressLatitude})) * COS(RADIANS(${conditions?.addressLatitude?.value})) * POW(SIN(RADIANS(${posts.addressLongitude}) - RADIANS(${conditions?.addressLongitude?.value})) / 2, 2)))`
         })
       })
       .from(posts)
@@ -547,7 +653,7 @@ export const selectPassPostByConditions = async <T extends selectPassPostByCondi
 
     if (hasLocationFilter) {
       whereClause.push(
-        sql<number>`calculate_distance(${posts.addressLatitude},${posts.addressLongitude},${conditions?.addressLatitude?.value},${conditions?.addressLongitude?.value}) <= ${conditions?.radius}`
+        sql<number>`6371 * 2 * ASIN(SQRT(POW(SIN(RADIANS(${posts.addressLatitude}) - RADIANS(${conditions?.addressLatitude?.value})) / 2, 2) + COS(RADIANS(${posts.addressLatitude})) * COS(RADIANS(${conditions?.addressLatitude?.value})) * POW(SIN(RADIANS(${posts.addressLongitude}) - RADIANS(${conditions?.addressLongitude?.value})) / 2, 2))) <= ${conditions?.radius}`
       );
     }
 
@@ -591,7 +697,7 @@ export const selectPassPostByConditions = async <T extends selectPassPostByCondi
         passPost: passPosts,
         passItem: passPostItems,
         ...(hasLocationFilter && {
-          distance: sql<number>`calculate_distance(${posts.addressLatitude},${posts.addressLongitude},${conditions?.addressLatitude?.value},${conditions?.addressLongitude?.value})`
+          distance: sql<number>`6371 * 2 * ASIN(SQRT(POW(SIN(RADIANS(${posts.addressLatitude}) - RADIANS(${conditions?.addressLatitude?.value})) / 2, 2) + COS(RADIANS(${posts.addressLatitude})) * COS(RADIANS(${conditions?.addressLatitude?.value})) * POW(SIN(RADIANS(${posts.addressLongitude}) - RADIANS(${conditions?.addressLongitude?.value})) / 2, 2)))`
         })
       })
       .from(posts)
