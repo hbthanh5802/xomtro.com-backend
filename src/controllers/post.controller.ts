@@ -1,3 +1,4 @@
+import { getSocketIdByUserId, io } from '@/configs/socket.config';
 import { insertAsset } from '@/services/asset.service';
 import {
   deleteCommentByConditions,
@@ -9,6 +10,7 @@ import {
 } from '@/services/comment.service';
 import { deleteManyResources, uploadImage } from '@/services/fileUpload.service';
 import { geocodingByGoong } from '@/services/location.service';
+import { insertNotification, selectNotificationByConditions } from '@/services/notification.service';
 import {
   deleteManyPassPostItems,
   deletePostAssets,
@@ -45,6 +47,7 @@ import {
 } from '@/services/post.service';
 import { ConditionsType } from '@/types/drizzle.type';
 import {
+  NotificationInsertSchemaType,
   PostCommentInsertSchemaType,
   PostCommentSelectSchemaType,
   UserPostInterestedSelectSchemaType,
@@ -2042,7 +2045,7 @@ export const renewPost = async (req: Request, res: Response, next: NextFunction)
 export const createComment = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const currentUser = req.currentUser;
-    const { users } = currentUser!;
+    const { users, users_detail } = currentUser!;
     const { postId, content, tags, parentCommentId } = req.body;
 
     const existingPost = await selectPostById(Number(postId));
@@ -2060,6 +2063,23 @@ export const createComment = async (req: Request, res: Response, next: NextFunct
     const insertCommentResult = await insertComment(insertCommentPayload);
     const commentId = insertCommentResult[0][0][0].id;
     const justInsertedComment = await selectCommentByConditions({ id: { operator: 'eq', value: commentId } });
+
+    const notificationPayload: NotificationInsertSchemaType = {
+      postId: existingPost[0].id,
+      userId: existingPost[0].ownerId!,
+      type: 'post',
+      title: 'Một bình luận mới trong bài viết của bạn',
+      content: `${users_detail.firstName ?? ''} ${users_detail.lastName} đã bình luận vào bài viết của bạn.`
+    };
+    const insertNotificationResult = await insertNotification(notificationPayload);
+    const newNotification = await selectNotificationByConditions({
+      id: { operator: 'eq', value: insertNotificationResult[0].id }
+    });
+    // Emit new notification to post owner
+    const ownerPostSocketId = getSocketIdByUserId(existingPost[0].ownerId!);
+    if (ownerPostSocketId && users.id !== existingPost[0].ownerId) {
+      io.to(ownerPostSocketId).emit('new-notification', newNotification[0]);
+    }
 
     return new ApiResponse(StatusCodes.CREATED, 'Create a comment successfully!', justInsertedComment).send(res);
   } catch (error) {

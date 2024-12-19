@@ -446,5 +446,5 @@ export const notifications = mysqlTable('notifications', {
     onDelete: 'cascade',
     onUpdate: 'cascade'
   }),
-  ...timestamp
+  ...timestamps
 });
