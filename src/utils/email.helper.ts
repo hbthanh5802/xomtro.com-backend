@@ -1,7 +1,6 @@
 import { transporter } from '@/configs/nodeMailer.config';
 
 export const sendEmail = async (emailReceiver: string, subject: string, content: string) => {
-  console.log('Send email to', emailReceiver);
   return transporter.sendMail({
     from: 'xomtro@support.com',
     to: emailReceiver,

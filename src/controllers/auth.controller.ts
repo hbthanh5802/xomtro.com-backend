@@ -1,4 +1,5 @@
 import axiosRequest from '@/configs/axiosClient.config';
+import { env } from '@/configs/env.config';
 import { insertAsset } from '@/services/asset.service';
 import { uploadImageFromUrl } from '@/services/fileUpload.service';
 import { updatePostByConditions } from '@/services/post.service';
@@ -131,7 +132,7 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
     const { accessToken, refreshToken } = await handleUserTokenProcess(tokenPayload);
 
     res.cookie('refreshToken', refreshToken, {
-      secure: false,
+      secure: env.NODE_ENV === 'production' ? true : false,
       httpOnly: true,
       sameSite: 'strict',
       expires: timeInVietNam().add(refreshExpirationTime, 'second').toDate()
@@ -179,7 +180,7 @@ export const refreshUserToken = async (req: Request, res: Response, next: NextFu
 
     res.cookie('refreshToken', newRefreshToken, {
       sameSite: 'strict',
-      secure: false,
+      secure: env.NODE_ENV === 'production' ? true : false,
       httpOnly: true,
       expires: timeInVietNam().add(refreshExpirationTime, 'second').toDate()
     });
@@ -288,7 +289,7 @@ export const googleAuth = async (req: Request, res: Response, next: NextFunction
     const { accessToken, refreshToken } = await handleUserTokenProcess(tokenPayload);
 
     res.cookie('refreshToken', refreshToken, {
-      secure: false,
+      secure: env.NODE_ENV === 'production' ? true : false,
       httpOnly: true,
       sameSite: 'strict',
       expires: timeInVietNam().add(refreshExpirationTime, 'second').toDate()

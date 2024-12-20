@@ -202,7 +202,6 @@ export const updateChatMemberLastRead = async (req: Request, res: Response, next
     const { users } = currentUser!;
     const { conversationId } = req.params;
 
-    console.log(conversationId);
     if (!conversationId || !Number.isSafeInteger(Number(conversationId))) {
       throw new ApiError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
     }
@@ -257,7 +256,6 @@ export const recallMessage = async (req: Request, res: Response, next: NextFunct
 
     if (existingMessage[0].assetId) {
       const messageAsset = await selectAssetById(existingMessage[0].assetId);
-      console.log(messageAsset[0]);
       await Promise.allSettled([
         deleteAssetByConditions({ id: { operator: 'eq', value: existingMessage[0].assetId } }),
         deleteResource(messageAsset[0].name, 'image')

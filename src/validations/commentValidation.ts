@@ -6,8 +6,6 @@ export const insertPostCommentValidation = createInsertSchema(postComments, {
   content: z.string()
 }).refine(
   (data) => {
-    // Nếu không có tags, content không được rỗng
-    console.log(data);
     if (!data.tags?.trim()) {
       return data.content.trim() !== '';
     }

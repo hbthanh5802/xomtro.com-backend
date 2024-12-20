@@ -27,6 +27,5 @@ export const selectPostsCountByTypeWithPostConditions = async <T extends PostSel
   }
   query = query.groupBy(posts.type).orderBy(desc(customCount(posts.type)));
 
-  // console.log(query.toSQL());
   return query;
 };

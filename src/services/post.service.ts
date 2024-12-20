@@ -82,10 +82,8 @@ export const insertPassPost = async (payload: passPostSchemaType) => {
 
 export const insertPassPostItem = async (payload: passPostItemSchemaType[] | passPostItemSchemaType) => {
   if (Array.isArray(payload)) {
-    console.log(1, payload);
     return db.insert(passPostItems).values(payload).$returningId();
   } else {
-    console.log(2, payload);
     return db.insert(passPostItems).values(payload).$returningId();
   }
 };
@@ -374,8 +372,6 @@ export const selectRentalPostByConditions = async <T extends selectRentalPostByC
     if (options?.pagination) {
       postIdsQuery = withPagination(postIdsQuery, pagination?.page, pagination?.pageSize);
     }
-
-    console.log(postIdsQuery.toSQL());
     const postIds = (await postIdsQuery).map((p) => p.id);
 
     if (!postIds.length) {
