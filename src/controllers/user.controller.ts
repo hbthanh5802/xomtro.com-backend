@@ -1,3 +1,4 @@
+import { env } from '@/configs/env.config';
 import { handleUserTokenProcess } from '@/controllers/auth.controller';
 import {
   deleteAddressByConditions,
@@ -133,9 +134,9 @@ export const verifyUserEmail = async (req: Request, res: Response, next: NextFun
     const { accessToken, refreshToken } = await handleUserTokenProcess(tokenPayload);
 
     res.cookie('refreshToken', refreshToken, {
-      secure: true,
+      secure: env.NODE_ENV === 'production' ? true : false,
       httpOnly: true,
-      sameSite: 'strict'
+      sameSite: env.NODE_ENV === 'production' ? 'none' : 'strict'
     });
 
     const responseData = {

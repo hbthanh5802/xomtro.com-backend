@@ -134,7 +134,7 @@ export const loginUser = async (req: Request, res: Response, next: NextFunction)
     res.cookie('refreshToken', refreshToken, {
       secure: env.NODE_ENV === 'production' ? true : false,
       httpOnly: true,
-      sameSite: 'strict',
+      sameSite: env.NODE_ENV === 'production' ? 'none' : 'strict',
       expires: timeInVietNam().add(refreshExpirationTime, 'second').toDate()
     });
 
@@ -179,7 +179,7 @@ export const refreshUserToken = async (req: Request, res: Response, next: NextFu
       await handleUserTokenProcess(newTokenPayload);
 
     res.cookie('refreshToken', newRefreshToken, {
-      sameSite: 'strict',
+      sameSite: env.NODE_ENV === 'production' ? 'none' : 'strict',
       secure: env.NODE_ENV === 'production' ? true : false,
       httpOnly: true,
       expires: timeInVietNam().add(refreshExpirationTime, 'second').toDate()
@@ -291,7 +291,7 @@ export const googleAuth = async (req: Request, res: Response, next: NextFunction
     res.cookie('refreshToken', refreshToken, {
       secure: env.NODE_ENV === 'production' ? true : false,
       httpOnly: true,
-      sameSite: 'strict',
+      sameSite: env.NODE_ENV === 'production' ? 'none' : 'strict',
       expires: timeInVietNam().add(refreshExpirationTime, 'second').toDate()
     });
 
