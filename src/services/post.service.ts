@@ -396,6 +396,12 @@ export const selectRentalPostByConditions = async <T extends selectRentalPostByC
       .where(inArray(posts.id, postIds))
       .$dynamic();
 
+    if (hasLocationFilter) {
+      orderClause.unshift(
+        sql`6371 * 2 * ASIN(SQRT(POW(SIN(RADIANS(${posts.addressLatitude}) - RADIANS(${conditions?.addressLatitude?.value})) / 2, 2) + COS(RADIANS(${posts.addressLatitude})) * COS(RADIANS(${conditions?.addressLatitude?.value})) * POW(SIN(RADIANS(${posts.addressLongitude}) - RADIANS(${conditions?.addressLongitude?.value})) / 2, 2))) asc`
+      );
+    }
+
     if (orderClause.length) {
       query = query.orderBy(...(orderClause as any)).$dynamic();
     }
@@ -499,6 +505,11 @@ export const selectJoinPostByConditions = async <T extends selectJoinPostByCondi
       .where(inArray(posts.id, postIds))
       .$dynamic();
 
+    if (hasLocationFilter) {
+      orderClause.unshift(
+        sql`6371 * 2 * ASIN(SQRT(POW(SIN(RADIANS(${posts.addressLatitude}) - RADIANS(${conditions?.addressLatitude?.value})) / 2, 2) + COS(RADIANS(${posts.addressLatitude})) * COS(RADIANS(${conditions?.addressLatitude?.value})) * POW(SIN(RADIANS(${posts.addressLongitude}) - RADIANS(${conditions?.addressLongitude?.value})) / 2, 2))) asc`
+      );
+    }
     if (orderClause.length) {
       query = query.orderBy(...(orderClause as any)).$dynamic();
     }
@@ -601,6 +612,11 @@ export const selectWantedPostByConditions = async <T extends selectWantedPostByC
       .where(inArray(posts.id, postIds))
       .$dynamic();
 
+    if (hasLocationFilter) {
+      orderClause.unshift(
+        sql`6371 * 2 * ASIN(SQRT(POW(SIN(RADIANS(${posts.addressLatitude}) - RADIANS(${conditions?.addressLatitude?.value})) / 2, 2) + COS(RADIANS(${posts.addressLatitude})) * COS(RADIANS(${conditions?.addressLatitude?.value})) * POW(SIN(RADIANS(${posts.addressLongitude}) - RADIANS(${conditions?.addressLongitude?.value})) / 2, 2))) asc`
+      );
+    }
     if (orderClause.length) {
       query = query.orderBy(...(orderClause as any)).$dynamic();
     }
@@ -704,6 +720,11 @@ export const selectPassPostByConditions = async <T extends selectPassPostByCondi
       .where(inArray(posts.id, postIds))
       .$dynamic();
 
+    if (hasLocationFilter) {
+      orderClause.unshift(
+        sql`6371 * 2 * ASIN(SQRT(POW(SIN(RADIANS(${posts.addressLatitude}) - RADIANS(${conditions?.addressLatitude?.value})) / 2, 2) + COS(RADIANS(${posts.addressLatitude})) * COS(RADIANS(${conditions?.addressLatitude?.value})) * POW(SIN(RADIANS(${posts.addressLongitude}) - RADIANS(${conditions?.addressLongitude?.value})) / 2, 2))) asc`
+      );
+    }
     if (orderClause.length) {
       query = query.orderBy(...(orderClause as any)).$dynamic();
     }
