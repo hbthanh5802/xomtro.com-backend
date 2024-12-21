@@ -216,7 +216,7 @@ const updateExistingAvatar = async (assetId: number, uploadResult: UploadApiResp
   await deleteResource(selectAssetResult[0].name, 'image');
   await updateAssetById(assetId, {
     name: uploadResult.public_id,
-    url: uploadResult.url
+    url: uploadResult.secure_url
   });
 };
 
@@ -225,7 +225,7 @@ const createNewAvatarAsset = async (userId: number, uploadResult: UploadApiRespo
     name: uploadResult.public_id,
     folder: 'avatars',
     type: 'image',
-    url: uploadResult.url,
+    url: uploadResult.secure_url,
     tags: JSON.stringify(['avatar']),
     format: uploadResult.forma,
     userId

@@ -112,11 +112,11 @@ export const insertPostAssetsHandler = async (
     if (!payload.length) return [];
 
     const insertAssetPayload: assetSchemaType[] = payload.map((file) => {
-      const { public_id, url, resource_type, format } = file;
+      const { public_id, secure_url, resource_type, format } = file;
       return {
         userId: ownerInfo.userId,
         postId: ownerInfo.postId,
-        url: url,
+        url: secure_url,
         name: public_id,
         format,
         folder: 'posts',
