@@ -13,6 +13,6 @@ export const insertPostCommentValidation = createInsertSchema(postComments, {
   },
   {
     message: 'Content cannot be empty if tags are not provided.',
-    path: ['content'] // Chỉ định lỗi sẽ được gán vào trường "content"
+    path: ['content']
   }
 );

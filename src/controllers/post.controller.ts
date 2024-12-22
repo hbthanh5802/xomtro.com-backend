@@ -2032,7 +2032,9 @@ export const renewPost = async (req: Request, res: Response, next: NextFunction)
       expirationAfter,
       expirationAfterUnit,
       expirationTime: expirationTime?.toDate(),
-      status: 'actived'
+      status: 'actived',
+      createdAt: timeInVietNam().toDate(),
+      updatedAt: timeInVietNam().toDate()
     };
     await updatePostById(existingPost[0].id, updatePostPayload);
 
