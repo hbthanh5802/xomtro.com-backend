@@ -17,7 +17,7 @@ export const optimizeImage = async (buffer: Buffer, options?: ResizeOptions): Pr
         fit: 'contain'
       })
       .webp({
-        quality: 85, // Tăng mức độ chất lượng
+        quality: 85,
         effort: 4, // Giảm nỗ lực để tăng tốc xử lý
         smartSubsample: true,
         nearLossless: false // Loại bỏ gần-lossless nếu muốn tối ưu hơn nữa

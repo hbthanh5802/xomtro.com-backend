@@ -133,24 +133,6 @@ export const assets = mysqlTable(
   })
 );
 
-// export const properties = mysqlTable('properties', {
-//   id: int().primaryKey().autoincrement(),
-//   ownerId: int('owner_id').references(() => users.id, {
-//     onDelete: 'cascade',
-//     onUpdate: 'cascade'
-//   }),
-//   addressId: int('address_id').references(() => addresses.id, {
-//     onDelete: 'cascade',
-//     onUpdate: 'cascade'
-//   }),
-//   totalArea: float('total_area'),
-//   totalAreaUnit: mysqlEnum(['cm2', 'm2', 'km2']).default('m2'),
-//   priceRangeStart: int('price_range_start').default(0),
-//   priceRangeEnd: int('price_range_end'),
-//   isActived: boolean('is_actived').default(true),
-//   ...timestamps
-// });
-
 export const posts = mysqlTable('posts', {
   id: int().primaryKey().autoincrement(),
   ownerId: int('owner_id').references(() => users.id, {
