@@ -1,6 +1,7 @@
 import { env } from '@/configs/env.config';
 import googleClient from '@/configs/google.config';
 import ApiError from '@/utils/ApiError.helper';
+import { timeInVietNam } from '@/utils/time.helper';
 import { ReasonPhrases, StatusCodes } from 'http-status-codes';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 
@@ -50,14 +51,14 @@ export const verifyJwtToken = (
 };
 
 export const generateAccessToken = (payload: tokenPayloadType, options?: jwt.SignOptions) => {
-  return jwt.sign(payload, accessKey, {
+  return jwt.sign({ ...payload, iat: Math.floor(timeInVietNam().toDate().getTime() / 1000) }, accessKey, {
     expiresIn: accessExpirationTime,
     ...(options && { ...options })
   });
 };
 
 export const generateRefreshToken = (payload: tokenPayloadType, options?: jwt.SignOptions) => {
-  return jwt.sign(payload, refreshKey, {
+  return jwt.sign({ ...payload, iat: Math.floor(timeInVietNam().toDate().getTime() / 1000) }, refreshKey, {
     expiresIn: refreshExpirationTime,
     ...(options && { ...options })
   });
