@@ -49,12 +49,52 @@ export const getPostsCountByTypeWithPostConditions = async (req: Request, res: R
           operator: 'between',
           value: [new Date(dateStart), dateEnd ? new Date(dateEnd) : timeInVietNam().toDate()]
         }
+      }),
+      ...(status && {
+        status: {
+          operator: 'eq',
+          value: status
+        }
       })
     };
 
     const response = await analyticService.selectPostsCountByTypeWithPostConditions(where);
 
     return new ApiResponse(StatusCodes.OK, ReasonPhrases.OK, response).send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getPostPriceAnalyticByConditions = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { totalAreaStart, totalAreaEnd, provinceName, districtName, wardName, type, year } = req.body;
+
+    if (!type || !['rental', 'wanted', 'pass'].includes(type)) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
+    }
+    if (totalAreaStart && !Number.isSafeInteger(totalAreaStart)) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
+    }
+    if (totalAreaEnd && !Number.isSafeInteger(totalAreaEnd)) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
+    }
+    if (year && !Number.isSafeInteger(year)) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, ReasonPhrases.BAD_REQUEST);
+    }
+
+    const selectAnalyticPayload: analyticService.SelectPostAnalyticConditionType = {
+      ...(totalAreaStart && { totalAreaStart }),
+      ...(totalAreaEnd && { totalAreaEnd }),
+      ...(provinceName && { provinceName }),
+      ...(districtName && { districtName }),
+      ...(wardName && { wardName }),
+      ...(year && { year }),
+      ...(type && { type })
+    };
+    const results = await analyticService.selectRentalPostAnalyticByConditions(selectAnalyticPayload);
+
+    return new ApiResponse(StatusCodes.OK, ReasonPhrases.OK, results).send(res);
   } catch (error) {
     next(error);
   }
