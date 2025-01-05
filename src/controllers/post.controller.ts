@@ -668,7 +668,7 @@ export const searchPosts = async (req: Request, res: Response, next: NextFunctio
         'whereConditions or orderConditions is required, but it can be empty'
       );
     }
-    const {
+    let {
       title,
       status,
       priceStart,
@@ -713,6 +713,12 @@ export const searchPosts = async (req: Request, res: Response, next: NextFunctio
 
     if (dateStart && isNaN(Date.parse(dateStart))) {
       throw new ApiError(StatusCodes.UNPROCESSABLE_ENTITY, 'dateStart value is invalid');
+    }
+
+    if (!!totalAreaStart && !!totalAreaEnd && totalAreaStart > totalAreaEnd) {
+      const temp = totalAreaStart;
+      totalAreaStart = totalAreaEnd;
+      totalAreaEnd = temp;
     }
 
     const where: ConditionsType<
@@ -849,14 +855,8 @@ export const searchPosts = async (req: Request, res: Response, next: NextFunctio
       }),
       ...(totalAreaStart && {
         totalArea: {
-          operator: 'gte',
-          value: totalAreaStart
-        }
-      }),
-      ...(totalAreaEnd && {
-        totalArea: {
-          operator: 'lte',
-          value: totalAreaEnd
+          operator: 'between',
+          value: [totalAreaStart, totalAreaEnd ? totalAreaEnd : totalAreaStart]
         }
       }),
       ...(totalAreaUnit && {

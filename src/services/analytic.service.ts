@@ -76,7 +76,5 @@ export const selectRentalPostAnalyticByConditions = async (conditions: SelectPos
 
   query = query.groupBy(sql`MONTH(${posts.updatedAt})`).orderBy(sql`month(${posts.updatedAt})`);
 
-  console.log(query.toSQL());
-
   return query;
 };
