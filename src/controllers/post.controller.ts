@@ -230,7 +230,7 @@ export const createRentalPost = async (req: Request, res: Response, next: NextFu
       postId,
       numberRoomAvailable,
       priceStart: Number(priceStart),
-      priceEnd: Number(priceStart),
+      priceEnd: Number(priceEnd),
       priceUnit,
       minLeaseTerm: Number(minLeaseTerm),
       minLeaseTermUnit,
@@ -359,7 +359,7 @@ export const createWantedPost = async (req: Request, res: Response, next: NextFu
     const insertWantedPostPayload: wantedPostSchemaType = {
       postId,
       priceStart: Number(priceStart),
-      priceEnd: Number(priceStart),
+      priceEnd: Number(priceEnd),
       priceUnit,
       moveInDate: new Date(moveInDate),
       totalArea: Number(totalArea),
@@ -488,7 +488,7 @@ export const createJoinPost = async (req: Request, res: Response, next: NextFunc
     const insertWantedPostPayload: joinPostSchemaType = {
       postId,
       priceStart: Number(priceStart),
-      priceEnd: Number(priceStart),
+      priceEnd: Number(priceEnd),
       priceUnit,
       moveInDate: new Date(moveInDate),
       totalArea: Number(totalArea),
@@ -1335,7 +1335,7 @@ export const updateRentalPost = async (req: Request, res: Response, next: NextFu
     const updatePostDetailPayload: Partial<rentalPostSchemaType> = {
       numberRoomAvailable,
       priceStart: Number(priceStart),
-      priceEnd: Number(priceStart),
+      priceEnd: Number(priceEnd),
       priceUnit,
       minLeaseTerm: Number(minLeaseTerm),
       minLeaseTermUnit,
@@ -1487,7 +1487,7 @@ export const updateWantedPost = async (req: Request, res: Response, next: NextFu
     };
     const updatePostDetailPayload: Partial<wantedPostSchemaType> = {
       priceStart: Number(priceStart),
-      priceEnd: Number(priceStart),
+      priceEnd: Number(priceEnd),
       priceUnit,
       moveInDate: new Date(moveInDate),
       totalArea: Number(totalArea),
